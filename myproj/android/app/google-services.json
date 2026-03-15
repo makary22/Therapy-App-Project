@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "680367187559",
+    "project_id": "therapy-app-5d7b2",
+    "storage_bucket": "therapy-app-5d7b2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:680367187559:android:00e6fd0384788d07a856c2",
+        "android_client_info": {
+          "package_name": "com.example.myproj"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBWmmGiODtatQ7Hu1r-nFJ5xb24ZCnw8cQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../home/HomeScreen.dart' show HomeScreen;
+import 'register.dart' show RegisterScreen;
+import 'login.dart' show LoginScreen;
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -41,16 +42,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     if (!mounted) return;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const RegisterScreen()),
+      (route) => false,
     );
   }
 
   void _onLogin() {
-    ScaffoldMessenger.of(
+    Navigator.push(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Login tapped')));
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
 
   void _goNext() {
