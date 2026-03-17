@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Safe Space</string>
+    <string name="facebook_app_id">1223797906597849</string>
+    <string name="facebook_client_token">bb7518a365b3d6c9740a19e9d4657f73</string>
+    <string name="fb_login_protocol_scheme">fb1223797906597849</string>
+</resources>

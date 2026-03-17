@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../auth/auth_service.dart';
 import 'login.dart' show LoginScreen;
 import 'verify_email_screen.dart' show VerifyEmailScreen;
+import '../home/HomeScreen.dart' show HomeScreen;
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -20,6 +22,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _agreeToTerms = false;
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
+  bool _isFacebookLoading = false;
   bool _showValidationErrors = false;
   String? _emailErrorText;
   String? _passwordErrorText;
@@ -35,9 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void initState() {
     super.initState();
     _emailFocusNode.addListener(() {
-      if (mounted) {
-        setState(() {});
-      }
+      if (mounted) setState(() {});
     });
   }
 
@@ -50,6 +52,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  // ── Navigate to Home and clear the stack ──
+  void _goToHome() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+  }
+
+  // ── Show a bottom snackbar for social errors ──
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // EMAIL / PASSWORD REGISTER
+  // ─────────────────────────────────────────────────────────────
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
@@ -95,6 +121,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
       } else {
         setState(() => _formErrorText = msg);
       }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // GOOGLE SIGN-IN
+  // ─────────────────────────────────────────────────────────────
+  Future<void> _signUpWithGoogle() async {
+    if (_isGoogleLoading || _isFacebookLoading) return;
+    setState(() => _isGoogleLoading = true);
+
+    final result = await AuthService.signInWithGoogle();
+
+    if (!mounted) return;
+    setState(() => _isGoogleLoading = false);
+
+    if (result.success) {
+      _goToHome();
+    } else if (result.errorMessage != null &&
+        !result.errorMessage!.contains('cancelled')) {
+      _showError(result.errorMessage!);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // FACEBOOK SIGN-IN
+  // ─────────────────────────────────────────────────────────────
+  Future<void> _signUpWithFacebook() async {
+    if (_isGoogleLoading || _isFacebookLoading) return;
+    setState(() => _isFacebookLoading = true);
+
+    final result = await AuthService.signInWithFacebook();
+
+    if (!mounted) return;
+    setState(() => _isFacebookLoading = false);
+
+    if (result.success) {
+      _goToHome();
+    } else if (result.errorMessage != null &&
+        !result.errorMessage!.contains('cancelled')) {
+      _showError(result.errorMessage!);
     }
   }
 
@@ -203,7 +269,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Email / Phone field
+                      // Email field
                       _buildTextField(
                         controller: _emailController,
                         focusNode: _emailFocusNode,
@@ -221,36 +287,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         },
                         autovalidateMode: AutovalidateMode.onUserInteraction,
                         validator: (v) {
-                          if (_emailFocusNode.hasFocus) {
-                            return null;
-                          }
-
+                          if (_emailFocusNode.hasFocus) return null;
                           if (v == null || v.trim().isEmpty) {
                             return 'Please enter your email';
                           }
-
-                          // Show server-side email error if present
                           if (_emailErrorText != null) return _emailErrorText;
-
                           final input = v.trim();
-                          final containsLetter =
-                              RegExp(r'[a-zA-Z]').hasMatch(input);
-
+                          final containsLetter = RegExp(
+                            r'[a-zA-Z]',
+                          ).hasMatch(input);
                           if (containsLetter || input.contains('@')) {
                             if (!RegExp(
                               r'^[A-Za-z0-9._%+-]+@',
                             ).hasMatch(input)) {
                               return 'Invalid email format (must start with username@)';
                             }
-
                             if (!RegExp(
                               r'@(gmail\.com|hotmail\.com|outlook\.com|icloud\.com|yahoo\.com|(?:[A-Za-z0-9-]+\.)*edu\.eg)$',
                               caseSensitive: false,
                             ).hasMatch(input)) {
                               return 'Email domain not allowed\nAllowed: gmail.com, hotmail.com, outlook.com, icloud.com, yahoo.com, *.edu.eg';
                             }
-                          } 
-
+                          }
                           return null;
                         },
                       ),
@@ -309,9 +367,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               onChanged: (v) => setState(() {
                                 _agreeToTerms = v ?? false;
-                                if (_agreeToTerms) {
-                                  _termsErrorText = null;
-                                }
+                                if (_agreeToTerms) _termsErrorText = null;
                               }),
                             ),
                           ),
@@ -342,7 +398,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submit,
+                          onPressed:
+                              (_isLoading ||
+                                  _isGoogleLoading ||
+                                  _isFacebookLoading)
+                              ? null
+                              : _submit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _darkBtn,
                             foregroundColor: Colors.white,
@@ -379,6 +440,64 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                       ],
+
+                      // ── "Or sign up with" divider ──
+                      const SizedBox(height: 24),
+                      const Row(
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              color: Color(0xFFDDDDDD),
+                              thickness: 1,
+                              endIndent: 12,
+                            ),
+                          ),
+                          Text(
+                            'Or sign up with',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF888888),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(
+                              color: Color(0xFFDDDDDD),
+                              thickness: 1,
+                              indent: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // ── Social login buttons ──
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _SocialButton(
+                              onTap: (_isGoogleLoading || _isFacebookLoading)
+                                  ? null
+                                  : _signUpWithGoogle,
+                              label: 'Google',
+                              faIcon: FontAwesomeIcons.google,
+                              iconColor: const Color(0xFFDB4437),
+                              isLoading: _isGoogleLoading,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: _SocialButton(
+                              onTap: (_isGoogleLoading || _isFacebookLoading)
+                                  ? null
+                                  : _signUpWithFacebook,
+                              label: 'Facebook',
+                              faIcon: FontAwesomeIcons.facebook,
+                              iconColor: const Color(0xFF1877F2),
+                              isLoading: _isFacebookLoading,
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 20),
 
                       // Login link
@@ -472,6 +591,79 @@ class _RegisterScreenState extends State<RegisterScreen> {
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Reusable social login button widget
+// ─────────────────────────────────────────────────────────────
+class _SocialButton extends StatelessWidget {
+  final VoidCallback? onTap;
+  final String label;
+  final IconData faIcon;
+  final Color iconColor;
+  final bool isLoading;
+
+  const _SocialButton({
+    required this.onTap,
+    required this.label,
+    required this.faIcon,
+    required this.iconColor,
+    this.isLoading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        splashColor: const Color(0xFFEDE8F5),
+        highlightColor: const Color(0xFFEDE8F5).withOpacity(0.5),
+        child: Container(
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: onTap == null
+                  ? const Color(0xFFEEEEEE)
+                  : const Color(0xFFDDDDDD),
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isLoading)
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: iconColor,
+                  ),
+                )
+              else
+                FaIcon(faIcon, size: 22, color: iconColor),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: onTap == null
+                      ? const Color(0xFFAAAAAA)
+                      : const Color(0xFF1A1A2E),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

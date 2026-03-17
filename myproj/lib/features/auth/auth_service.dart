@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
 /// Result wrapper so callers get a typed success/error response
 /// without needing to catch exceptions themselves.
@@ -19,9 +21,6 @@ class AuthService {
 
   // ─────────────────────────────────────────────────────────────
   // REGISTER
-  // Creates the account, updates the display name, and sends the
-  // verification email. Returns AuthResult so the UI never needs
-  // to catch FirebaseAuthException itself.
   // ─────────────────────────────────────────────────────────────
   static Future<AuthResult> register({
     required String fullName,
@@ -34,13 +33,11 @@ class AuthService {
         password: password,
       );
 
-      // Persist display name
       if (fullName.isNotEmpty) {
         await credential.user?.updateDisplayName(fullName);
         await credential.user?.reload();
       }
 
-      // Send verification email right after account creation
       final user = _auth.currentUser;
       if (user != null && !user.emailVerified) {
         await user.sendEmailVerification();
@@ -59,21 +56,14 @@ class AuthService {
 
   // ─────────────────────────────────────────────────────────────
   // LOGIN
-  // Signs in, reloads the user, then checks emailVerified.
-  // Returns AuthResult; the `isEmailVerified` field tells the UI
-  // which screen to navigate to.
   // ─────────────────────────────────────────────────────────────
   static Future<LoginResult> login({
     required String email,
     required String password,
   }) async {
     try {
-      await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
 
-      // Always reload so emailVerified reflects the latest state
       await _auth.currentUser?.reload();
       final verified = _auth.currentUser?.emailVerified ?? false;
 
@@ -85,6 +75,85 @@ class AuthService {
     } catch (e) {
       debugPrint('[Auth] Unexpected login error: $e');
       return LoginResult.failure('Something went wrong. Please try again.');
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // GOOGLE SIGN-IN
+  // ─────────────────────────────────────────────────────────────
+  static Future<AuthResult> signInWithGoogle() async {
+    try {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        return AuthResult.failure('Google sign-in cancelled.');
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await _auth.signInWithCredential(credential);
+      await _auth.currentUser?.reload();
+
+      debugPrint('[Auth] Google sign-in success: ${_auth.currentUser?.email}');
+      return AuthResult.success();
+    } on FirebaseAuthException catch (e) {
+      debugPrint('[Auth] Google sign-in error: ${e.code}');
+      return AuthResult.failure(_mapSocialError(e));
+    } catch (e) {
+      debugPrint('[Auth] Google unexpected error: $e');
+      return AuthResult.failure('Google sign-in failed. Please try again.');
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // FACEBOOK SIGN-IN
+  // ─────────────────────────────────────────────────────────────
+  static Future<AuthResult> signInWithFacebook() async {
+    try {
+      final loginResult = await FacebookAuth.instance.login(
+        permissions: ['email', 'public_profile'],
+      );
+
+      debugPrint(
+        '[Auth] Facebook login status=${loginResult.status} message=${loginResult.message}',
+      );
+
+      if (loginResult.status == LoginStatus.cancelled) {
+        return AuthResult.failure('Facebook sign-in cancelled.');
+      }
+
+      if (loginResult.status != LoginStatus.success) {
+        return AuthResult.failure(
+          loginResult.message ??
+              'Facebook sign-in failed (status: ${loginResult.status.name}).',
+        );
+      }
+
+      final token = loginResult.accessToken?.tokenString;
+      if (token == null || token.isEmpty) {
+        return AuthResult.failure(
+          'Facebook sign-in failed: no access token returned.',
+        );
+      }
+
+      final credential = FacebookAuthProvider.credential(token);
+
+      await _auth.signInWithCredential(credential);
+      await _auth.currentUser?.reload();
+
+      debugPrint(
+        '[Auth] Facebook sign-in success: ${_auth.currentUser?.email}',
+      );
+      return AuthResult.success();
+    } on FirebaseAuthException catch (e) {
+      debugPrint('[Auth] Facebook sign-in error: ${e.code}');
+      return AuthResult.failure(_mapSocialError(e));
+    } catch (e) {
+      debugPrint('[Auth] Facebook unexpected error: $e');
+      return AuthResult.failure('Facebook sign-in failed. Please try again.');
     }
   }
 
@@ -114,7 +183,6 @@ class AuthService {
 
   // ─────────────────────────────────────────────────────────────
   // CHECK EMAIL VERIFICATION
-  // Call this when the user taps "I Verified My Email".
   // ─────────────────────────────────────────────────────────────
   static Future<bool> checkEmailVerified() async {
     await _auth.currentUser?.reload();
@@ -126,7 +194,11 @@ class AuthService {
   // ─────────────────────────────────────────────────────────────
   // SIGN OUT
   // ─────────────────────────────────────────────────────────────
-  static Future<void> signOut() => _auth.signOut();
+  static Future<void> signOut() async {
+    await GoogleSignIn().signOut();
+    await FacebookAuth.instance.logOut();
+    await _auth.signOut();
+  }
 
   // ─────────────────────────────────────────────────────────────
   // ERROR MAPPERS
@@ -183,6 +255,23 @@ class AuthService {
         return 'No internet connection. Try again.';
       default:
         return 'Failed to send email (${e.code}).';
+    }
+  }
+
+  static String _mapSocialError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'account-exists-with-different-credential':
+        return 'An account already exists with this email using a different sign-in method.';
+      case 'invalid-credential':
+        return 'Invalid credentials. Please try again.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'network-request-failed':
+        return 'No internet connection. Please try again.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      default:
+        return e.message ?? 'Sign-in failed. Please try again.';
     }
   }
 }
