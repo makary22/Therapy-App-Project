@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../auth/auth_service.dart';
 import 'verify_email_screen.dart' show VerifyEmailScreen;
@@ -21,6 +22,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordFocusNode = FocusNode();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
+  bool _isFacebookLoading = false;
   String? _authErrorText;
   bool _showEmailValidation = false;
   bool _showPasswordValidation = false;
@@ -91,6 +94,65 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (_) => const VerifyEmailScreen()),
         (route) => false,
       );
+    }
+  }
+
+  void _goToHome() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  Future<void> _signInWithGoogle() async {
+    if (_isGoogleLoading || _isFacebookLoading) return;
+    setState(() {
+      _isGoogleLoading = true;
+      _authErrorText = null;
+    });
+
+    final result = await AuthService.signInWithGoogle();
+
+    if (!mounted) return;
+    setState(() => _isGoogleLoading = false);
+
+    if (result.success) {
+      _goToHome();
+    } else if (result.errorMessage != null &&
+        !result.errorMessage!.contains('cancelled')) {
+      _showSnack(result.errorMessage!);
+    }
+  }
+
+  Future<void> _signInWithFacebook() async {
+    if (_isGoogleLoading || _isFacebookLoading) return;
+    setState(() {
+      _isFacebookLoading = true;
+      _authErrorText = null;
+    });
+
+    final result = await AuthService.signInWithFacebook();
+
+    if (!mounted) return;
+    setState(() => _isFacebookLoading = false);
+
+    if (result.success) {
+      _goToHome();
+    } else if (result.errorMessage != null &&
+        !result.errorMessage!.contains('cancelled')) {
+      _showSnack(result.errorMessage!);
     }
   }
 
@@ -562,6 +624,60 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ],
+                      const SizedBox(height: 18),
+                      const Row(
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              color: Color(0xFFDDDDDD),
+                              thickness: 1,
+                              endIndent: 12,
+                            ),
+                          ),
+                          Text(
+                            'Or sign in with',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF888888),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(
+                              color: Color(0xFFDDDDDD),
+                              thickness: 1,
+                              indent: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _SocialButton(
+                              onTap: (_isGoogleLoading || _isFacebookLoading)
+                                  ? null
+                                  : _signInWithGoogle,
+                              label: 'Google',
+                              faIcon: FontAwesomeIcons.google,
+                              iconColor: const Color(0xFFDB4437),
+                              isLoading: _isGoogleLoading,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: _SocialButton(
+                              onTap: (_isGoogleLoading || _isFacebookLoading)
+                                  ? null
+                                  : _signInWithFacebook,
+                              label: 'Facebook',
+                              faIcon: FontAwesomeIcons.facebook,
+                              iconColor: const Color(0xFF1877F2),
+                              isLoading: _isFacebookLoading,
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 14),
                       Center(
                         child: GestureDetector(
@@ -652,6 +768,79 @@ class _LoginScreenState extends State<LoginScreen> {
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Reusable social login button widget for LoginScreen
+// ─────────────────────────────────────────────────────────────
+class _SocialButton extends StatelessWidget {
+  final VoidCallback? onTap;
+  final String label;
+  final IconData faIcon;
+  final Color iconColor;
+  final bool isLoading;
+
+  const _SocialButton({
+    required this.onTap,
+    required this.label,
+    required this.faIcon,
+    required this.iconColor,
+    this.isLoading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        splashColor: const Color(0xFFEDE8F5),
+        highlightColor: const Color(0xFFEDE8F5).withOpacity(0.5),
+        child: Container(
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: onTap == null
+                  ? const Color(0xFFEEEEEE)
+                  : const Color(0xFFDDDDDD),
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isLoading)
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: iconColor,
+                  ),
+                )
+              else
+                FaIcon(faIcon, size: 22, color: iconColor),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: onTap == null
+                      ? const Color(0xFFAAAAAA)
+                      : const Color(0xFF1A1A2E),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
