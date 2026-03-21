@@ -1,0 +1,40 @@
+name: Daily FCM Notifications
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      type:
+        description: Force notification type
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - morning
+          - night
+
+jobs:
+  send-notification:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Install firebase-admin
+        run: npm install firebase-admin --no-save
+
+      - name: Send topic notification
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: node .github/scripts/send_fcm_topic.js "${{ github.event.inputs.type }}"
