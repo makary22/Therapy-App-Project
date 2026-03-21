@@ -169,376 +169,393 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Top section with illustration ──
-              Container(
-                width: double.infinity,
-                color: _bgTop,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Image.asset(
-                        'assets/icon/erasebg-transformed 1.png',
-                        height: 220,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => SizedBox(
-                          height: 220,
-                          child: Icon(
-                            Icons.people_alt_outlined,
-                            size: 120,
-                            color: _purple.withOpacity(0.4),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxHeight < 780;
+            final topImageHeight = isCompact
+                ? (constraints.maxHeight * 0.24).clamp(145.0, 190.0)
+                : 235.0;
+            final sectionSpacing = isCompact ? 18.0 : 24.0;
+            final formHorizontalPadding = isCompact ? 18.0 : 24.0;
+            final formVerticalPadding = isCompact ? 14.0 : 20.0;
 
-              // ── Form section ──
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 20,
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title
-                      RichText(
-                        text: TextSpan(
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          children: [
-                            const TextSpan(
-                              text: 'Sign ',
-                              style: TextStyle(color: Color(0xFF1A1A2E)),
-                            ),
-                            TextSpan(
-                              text: 'Up',
-                              style: TextStyle(color: _pink),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Create a new account',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF888888),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Full Name field
-                      _buildTextField(
-                        controller: _nameController,
-                        hint: 'Full Name',
-                        icon: Icons.person_outline,
-                        onChanged: (_) {
-                          if (_formErrorText != null) {
-                            setState(() => _formErrorText = null);
-                          }
-                        },
-                        autovalidateMode: _showValidationErrors
-                            ? AutovalidateMode.onUserInteraction
-                            : AutovalidateMode.disabled,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Enter your full name';
-                          }
-                          final trimmed = v.trim();
-                          if (trimmed.length < 3) {
-                            return 'Name must be at least 3 characters';
-                          }
-                          if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(trimmed)) {
-                            return 'Name can only contain letters';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Email field
-                      _buildTextField(
-                        controller: _emailController,
-                        focusNode: _emailFocusNode,
-                        hint: 'Email',
-                        icon: Icons.mail_outline,
-                        keyboardType: TextInputType.emailAddress,
-                        onChanged: (_) {
-                          if (_emailErrorText != null ||
-                              _formErrorText != null) {
-                            setState(() {
-                              _emailErrorText = null;
-                              _formErrorText = null;
-                            });
-                          }
-                        },
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        validator: (v) {
-                          if (_emailFocusNode.hasFocus) return null;
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          if (_emailErrorText != null) return _emailErrorText;
-                          final input = v.trim();
-                          final containsLetter = RegExp(
-                            r'[a-zA-Z]',
-                          ).hasMatch(input);
-                          if (containsLetter || input.contains('@')) {
-                            if (!RegExp(
-                              r'^[A-Za-z0-9._%+-]+@',
-                            ).hasMatch(input)) {
-                              return 'Invalid email format (must start with username@)';
-                            }
-                            if (!RegExp(
-                              r'@(gmail\.com|hotmail\.com|outlook\.com|icloud\.com|yahoo\.com|(?:[A-Za-z0-9-]+\.)*edu\.eg)$',
-                              caseSensitive: false,
-                            ).hasMatch(input)) {
-                              return 'Email domain not allowed\nAllowed: gmail.com, hotmail.com, outlook.com, icloud.com, yahoo.com, *.edu.eg';
-                            }
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Password field
-                      _buildTextField(
-                        controller: _passwordController,
-                        hint: 'Password',
-                        icon: Icons.key_outlined,
-                        obscure: _obscurePassword,
-                        onChanged: (_) {
-                          if (_passwordErrorText != null ||
-                              _formErrorText != null) {
-                            setState(() {
-                              _passwordErrorText = null;
-                              _formErrorText = null;
-                            });
-                          }
-                        },
-                        autovalidateMode: _showValidationErrors
-                            ? AutovalidateMode.onUserInteraction
-                            : AutovalidateMode.disabled,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: Colors.grey,
-                            size: 20,
-                          ),
-                          onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword,
-                          ),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
-                          return _passwordErrorText;
-                        },
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Terms checkbox
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: Checkbox(
-                              value: _agreeToTerms,
-                              activeColor: _purple,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
+            return SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Top section with illustration ──
+                  Container(
+                    width: double.infinity,
+                    color: _bgTop,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Image.asset(
+                            'assets/icon/erasebg-transformed 1.png',
+                            height: 200,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => SizedBox(
+                              height: 200,
+                              child: Icon(
+                                Icons.people_alt_outlined,
+                                size: 120,
+                                color: _purple.withOpacity(0.4),
                               ),
-                              onChanged: (v) => setState(() {
-                                _agreeToTerms = v ?? false;
-                                if (_agreeToTerms) _termsErrorText = null;
-                              }),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          const Text(
-                            'I agree to terms and conditions',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF444444),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (_termsErrorText != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          _termsErrorText!,
-                          style: const TextStyle(
-                            color: Colors.redAccent,
-                            fontSize: 12,
                           ),
                         ),
+                        SizedBox(height: isCompact ? 8 : 16),
                       ],
-                      const SizedBox(height: 24),
+                    ),
+                  ),
 
-                      // Create Account button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed:
-                              (_isLoading ||
-                                  _isGoogleLoading ||
-                                  _isFacebookLoading)
-                              ? null
-                              : _submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _darkBtn,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.4,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text(
-                                  'Create Account',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      if (_formErrorText != null) ...[
-                        const SizedBox(height: 10),
-                        Text(
-                          _formErrorText!,
-                          style: const TextStyle(
-                            color: Colors.redAccent,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-
-                      // ── "Or sign up with" divider ──
-                      const SizedBox(height: 24),
-                      const Row(
+                  // ── Form section ──
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: formHorizontalPadding,
+                      vertical: formVerticalPadding,
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Divider(
-                              color: Color(0xFFDDDDDD),
-                              thickness: 1,
-                              endIndent: 12,
-                            ),
-                          ),
-                          Text(
-                            'Or sign up with',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF888888),
-                            ),
-                          ),
-                          Expanded(
-                            child: Divider(
-                              color: Color(0xFFDDDDDD),
-                              thickness: 1,
-                              indent: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // ── Social login buttons ──
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _SocialButton(
-                              onTap: (_isGoogleLoading || _isFacebookLoading)
-                                  ? null
-                                  : _signUpWithGoogle,
-                              label: 'Google',
-                              faIcon: FontAwesomeIcons.google,
-                              iconColor: const Color(0xFFDB4437),
-                              isLoading: _isGoogleLoading,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: _SocialButton(
-                              onTap: (_isGoogleLoading || _isFacebookLoading)
-                                  ? null
-                                  : _signUpWithFacebook,
-                              label: 'Facebook',
-                              faIcon: FontAwesomeIcons.facebook,
-                              iconColor: const Color(0xFF1877F2),
-                              isLoading: _isFacebookLoading,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Login link
-                      Center(
-                        child: GestureDetector(
-                          onTap: () => Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const LoginScreen(),
-                            ),
-                          ),
-                          child: RichText(
+                          // Title
+                          RichText(
                             text: TextSpan(
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF888888),
+                              style: TextStyle(
+                                fontSize: isCompact ? 30 : 34,
+                                fontWeight: FontWeight.bold,
                               ),
                               children: [
                                 const TextSpan(
-                                  text: 'Already have an account? ',
+                                  text: 'Sign ',
+                                  style: TextStyle(color: Color(0xFF1A1A2E)),
                                 ),
                                 TextSpan(
-                                  text: 'Login',
-                                  style: TextStyle(
-                                    color: _darkBtn,
-                                    fontWeight: FontWeight.bold,
-                                    decoration: TextDecoration.underline,
-                                  ),
+                                  text: 'Up',
+                                  style: TextStyle(color: _pink),
                                 ),
                               ],
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Create a new account',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF888888),
+                            ),
+                          ),
+                          SizedBox(height: sectionSpacing),
+
+                          // Full Name field
+                          _buildTextField(
+                            controller: _nameController,
+                            hint: 'Full Name',
+                            icon: Icons.person_outline,
+                            onChanged: (_) {
+                              if (_formErrorText != null) {
+                                setState(() => _formErrorText = null);
+                              }
+                            },
+                            autovalidateMode: _showValidationErrors
+                                ? AutovalidateMode.onUserInteraction
+                                : AutovalidateMode.disabled,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Enter your full name';
+                              }
+                              final trimmed = v.trim();
+                              if (trimmed.length < 3) {
+                                return 'Name must be at least 3 characters';
+                              }
+                              if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(trimmed)) {
+                                return 'Name can only contain letters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Email field
+                          _buildTextField(
+                            controller: _emailController,
+                            focusNode: _emailFocusNode,
+                            hint: 'Email',
+                            icon: Icons.mail_outline,
+                            keyboardType: TextInputType.emailAddress,
+                            onChanged: (_) {
+                              if (_emailErrorText != null ||
+                                  _formErrorText != null) {
+                                setState(() {
+                                  _emailErrorText = null;
+                                  _formErrorText = null;
+                                });
+                              }
+                            },
+                            autovalidateMode:
+                                AutovalidateMode.onUserInteraction,
+                            validator: (v) {
+                              if (_emailFocusNode.hasFocus) return null;
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Please enter your email';
+                              }
+                              if (_emailErrorText != null)
+                                return _emailErrorText;
+                              final input = v.trim();
+                              final containsLetter = RegExp(
+                                r'[a-zA-Z]',
+                              ).hasMatch(input);
+                              if (containsLetter || input.contains('@')) {
+                                if (!RegExp(
+                                  r'^[A-Za-z0-9._%+-]+@',
+                                ).hasMatch(input)) {
+                                  return 'Invalid email format (must start with username@)';
+                                }
+                                if (!RegExp(
+                                  r'@(gmail\.com|hotmail\.com|outlook\.com|icloud\.com|yahoo\.com|(?:[A-Za-z0-9-]+\.)*edu\.eg)$',
+                                  caseSensitive: false,
+                                ).hasMatch(input)) {
+                                  return 'Email domain not allowed\nAllowed: gmail.com, hotmail.com, outlook.com, icloud.com, yahoo.com, *.edu.eg';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Password field
+                          _buildTextField(
+                            controller: _passwordController,
+                            hint: 'Password',
+                            icon: Icons.key_outlined,
+                            obscure: _obscurePassword,
+                            onChanged: (_) {
+                              if (_passwordErrorText != null ||
+                                  _formErrorText != null) {
+                                setState(() {
+                                  _passwordErrorText = null;
+                                  _formErrorText = null;
+                                });
+                              }
+                            },
+                            autovalidateMode: _showValidationErrors
+                                ? AutovalidateMode.onUserInteraction
+                                : AutovalidateMode.disabled,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: Colors.grey,
+                                size: 20,
+                              ),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.length < 6) {
+                                return 'Password must be at least 6 characters';
+                              }
+                              return _passwordErrorText;
+                            },
+                          ),
+                          SizedBox(height: isCompact ? 14 : 18),
+
+                          // Terms checkbox
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: Checkbox(
+                                  value: _agreeToTerms,
+                                  activeColor: _purple,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  onChanged: (v) => setState(() {
+                                    _agreeToTerms = v ?? false;
+                                    if (_agreeToTerms) _termsErrorText = null;
+                                  }),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              const Text(
+                                'I agree to terms and conditions',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF444444),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_termsErrorText != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              _termsErrorText!,
+                              style: const TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                          SizedBox(height: sectionSpacing),
+
+                          // Create Account button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed:
+                                  (_isLoading ||
+                                      _isGoogleLoading ||
+                                      _isFacebookLoading)
+                                  ? null
+                                  : _submit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _darkBtn,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.4,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Create Account',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          if (_formErrorText != null) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              _formErrorText!,
+                              style: const TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+
+                          // ── "Or sign up with" divider ──
+                          SizedBox(height: sectionSpacing),
+                          const Row(
+                            children: [
+                              Expanded(
+                                child: Divider(
+                                  color: Color(0xFFDDDDDD),
+                                  thickness: 1,
+                                  endIndent: 12,
+                                ),
+                              ),
+                              Text(
+                                'Or sign up with',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF888888),
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(
+                                  color: Color(0xFFDDDDDD),
+                                  thickness: 1,
+                                  indent: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: isCompact ? 14 : 20),
+
+                          // ── Social login buttons ──
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _SocialButton(
+                                  onTap:
+                                      (_isGoogleLoading || _isFacebookLoading)
+                                      ? null
+                                      : _signUpWithGoogle,
+                                  label: 'Google',
+                                  faIcon: FontAwesomeIcons.google,
+                                  iconColor: const Color(0xFFDB4437),
+                                  isLoading: _isGoogleLoading,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: _SocialButton(
+                                  onTap:
+                                      (_isGoogleLoading || _isFacebookLoading)
+                                      ? null
+                                      : _signUpWithFacebook,
+                                  label: 'Facebook',
+                                  faIcon: FontAwesomeIcons.facebook,
+                                  iconColor: const Color(0xFF1877F2),
+                                  isLoading: _isFacebookLoading,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: isCompact ? 14 : 20),
+
+                          // Login link
+                          Center(
+                            child: GestureDetector(
+                              onTap: () => Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const LoginScreen(),
+                                ),
+                              ),
+                              child: RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF888888),
+                                  ),
+                                  children: [
+                                    const TextSpan(
+                                      text: 'Already have an account? ',
+                                    ),
+                                    TextSpan(
+                                      text: 'Login',
+                                      style: TextStyle(
+                                        color: _darkBtn,
+                                        fontWeight: FontWeight.bold,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: isCompact ? 10 : 16),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

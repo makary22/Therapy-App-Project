@@ -1,0 +1,17 @@
+{
+  "name": "firebase-functions",
+  "description": "Firebase Cloud Functions for Safe Space app notifications",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": "18"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^4.7.0"
+  },
+  "scripts": {
+    "deploy": "firebase deploy --only functions"
+  }
+}
