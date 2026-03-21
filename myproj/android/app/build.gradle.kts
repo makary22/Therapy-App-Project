@@ -22,9 +22,9 @@ android {
     signingConfigs {
         create("release") {
             keyAlias = "upload"
-            keyPassword = "YOUR_PASSWORD"
+            keyPassword = "basmala"
             storeFile = file("upload-keystore.jks")
-            storePassword = "YOUR_PASSWORD"
+            storePassword = "basmala"
         }
     }
 
