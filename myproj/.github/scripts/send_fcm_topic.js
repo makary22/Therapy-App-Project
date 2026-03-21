@@ -63,13 +63,52 @@ function resolveType(forcedType, cairoNow) {
   return null;
 }
 
-async function main() {
-  const json = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  if (!json) {
+function parseServiceAccountFromEnv(rawSecret) {
+  const raw = (rawSecret || '').trim();
+  if (!raw) {
     throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_JSON secret.');
   }
 
-  const serviceAccount = JSON.parse(json);
+  const candidates = [];
+
+  // Plain JSON pasted directly into GitHub secret.
+  candidates.push(raw);
+
+  // JSON wrapped in quotes by mistake.
+  if (
+    (raw.startsWith('"') && raw.endsWith('"')) ||
+    (raw.startsWith("'") && raw.endsWith("'"))
+  ) {
+    candidates.push(raw.slice(1, -1));
+  }
+
+  // Base64 encoded JSON (common workaround for multiline secrets).
+  try {
+    candidates.push(Buffer.from(raw, 'base64').toString('utf8'));
+  } catch (_) {
+    // Ignore and keep trying other candidates.
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && parsed.project_id && parsed.client_email && parsed.private_key) {
+        return parsed;
+      }
+    } catch (_) {
+      // Keep trying next candidate.
+    }
+  }
+
+  throw new Error(
+    'Invalid FIREBASE_SERVICE_ACCOUNT_JSON. Paste the full service-account JSON object from Firebase as-is.'
+  );
+}
+
+async function main() {
+  const serviceAccount = parseServiceAccountFromEnv(
+    process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+  );
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
   });
@@ -107,6 +146,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error('FCM workflow failed:', err?.message || err);
   process.exit(1);
 });
