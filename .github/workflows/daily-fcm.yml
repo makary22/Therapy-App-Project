@@ -5,7 +5,8 @@ env:
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    # Run at minute 7 every hour (UTC) to avoid top-of-hour congestion.
+    - cron: '7 * * * *'
   workflow_dispatch:
     inputs:
       type:
@@ -33,6 +34,11 @@ jobs:
 
       - name: Install firebase-admin
         run: npm install firebase-admin --no-save
+
+      - name: Debug trigger context
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "run_started_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 
       - name: Send topic notification
         env:
