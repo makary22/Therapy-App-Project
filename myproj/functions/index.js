@@ -40,7 +40,7 @@ function pickDailyMessage(messages) {
  */
 exports.sendMorningNotification = functions
   .pubsub.schedule('0 9 * * *') // 9:00 AM every day (UTC)
-  .timeZone('UTC')
+  .timeZone('Africa/Cairo') // Adjust to Cairo time
   .onRun(async (context) => {
     const message = pickDailyMessage(morningMessages);
 
@@ -71,7 +71,7 @@ exports.sendMorningNotification = functions
  */
 exports.sendNightNotification = functions
   .pubsub.schedule('0 21 * * *') // 9:00 PM (21:00) every day (UTC)
-  .timeZone('UTC')
+  .timeZone('Africa/Cairo') // Adjust to Cairo time
   .onRun(async (context) => {
     const message = pickDailyMessage(nightMessages);
 
