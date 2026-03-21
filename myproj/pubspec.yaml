@@ -34,6 +34,7 @@ dependencies:
   shared_preferences: ^2.5.4
   firebase_core: ^2.10.0
   firebase_auth: ^4.20.0
+  firebase_messaging: ^14.8.1
   font_awesome_flutter: ^10.7.0
   google_sign_in: ^6.2.1
   flutter_facebook_auth: ^7.0.1
