@@ -47,6 +47,7 @@ exports.sendMorningNotification = functions
     const notification = {
       notification: {
         title: 'Safe Space ',
+        title: 'Safe Space',
         body: message,
       },
       data: {
@@ -78,6 +79,7 @@ exports.sendNightNotification = functions
     const notification = {
       notification: {
         title: 'Safe Space ',
+        title: 'Safe Space',
         body: message,
       },
       data: {
