@@ -4,21 +4,28 @@ on:
   push:
     branches:
       - main
+      - basbosa
   workflow_dispatch:
 
 jobs:
   build-ios:
     runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: myproj
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
+          flutter-version: '3.41.5'
+          channel: 'master'
+
+      - name: Flutter precache iOS
+        run: flutter precache --ios
 
       - name: Install dependencies
         run: flutter pub get
@@ -31,8 +38,8 @@ jobs:
       - name: Build iOS (no codesign)
         run: flutter build ios --release --no-codesign
 
-      - name: Upload IPA
-        uses: actions/upload-artifact@v3
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
           name: ios-build
-          path: build/ios/iphoneos/Runner.app
+          path: myproj/build/ios/iphoneos/Runner.app
