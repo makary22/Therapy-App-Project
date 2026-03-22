@@ -10,6 +10,9 @@ on:
 jobs:
   build-ios:
     runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: myproj
 
     steps:
       - name: Checkout code
@@ -32,8 +35,8 @@ jobs:
       - name: Build iOS (no codesign)
         run: flutter build ios --release --no-codesign
 
-      - name: Upload IPA
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-build
-          path: build/ios/iphoneos/Runner.app
+          path: myproj/build/ios/iphoneos/Runner.app
