@@ -33,20 +33,7 @@ Future<Widget> _resolveStartScreen({required bool seenOnboarding}) async {
     return const LoginScreen();
   }
 
- 
-  try {
-    await user.reload().timeout(
-      const Duration(seconds: 5),
-      onTimeout: () {
-        
-        debugPrint('User reload timed out, using cached data');
-      },
-    );
-  } catch (e) {
-    debugPrint('User reload failed: $e');
-   
-  }
-
+  await user.reload();
   final refreshedUser = FirebaseAuth.instance.currentUser;
 
   if (refreshedUser == null) {
@@ -57,6 +44,7 @@ Future<Widget> _resolveStartScreen({required bool seenOnboarding}) async {
       ? const HomeScreen()
       : const VerifyEmailScreen();
 }
+
 class MyApp extends StatelessWidget {
   final Widget startScreen;
 
