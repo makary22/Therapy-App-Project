@@ -34,18 +34,15 @@ Future<Widget> _resolveStartScreen({required bool seenOnboarding}) async {
     return const LoginScreen();
   }
 
- 
   try {
     await user.reload().timeout(
       const Duration(seconds: 5),
       onTimeout: () {
-        
         debugPrint('User reload timed out, using cached data');
       },
     );
   } catch (e) {
     debugPrint('User reload failed: $e');
-   
   }
 
   final refreshedUser = FirebaseAuth.instance.currentUser;
@@ -58,8 +55,11 @@ Future<Widget> _resolveStartScreen({required bool seenOnboarding}) async {
       ? const HomeScreen()
       : const VerifyEmailScreen();
 }
+
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final Widget startScreen;
+
+  const MyApp({super.key, required this.startScreen});
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +83,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      home: startScreen,
     );
   }
 }
