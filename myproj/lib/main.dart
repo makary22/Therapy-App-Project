@@ -7,6 +7,7 @@ import 'features/home/HomeScreen.dart' show HomeScreen;
 import 'features/notifications/push_notification_service.dart';
 import 'features/screens/login.dart' show LoginScreen;
 import 'features/screens/onboarding_screen.dart' show OnboardingScreen;
+import 'features/screens/splash_screen.dart' show SplashScreen;
 import 'features/screens/verify_email_screen.dart' show VerifyEmailScreen;
 
 void main() async {
@@ -58,21 +59,50 @@ Future<Widget> _resolveStartScreen({required bool seenOnboarding}) async {
       : const VerifyEmailScreen();
 }
 class MyApp extends StatelessWidget {
-  final Widget startScreen;
-
-  const MyApp({super.key, required this.startScreen});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Safe Space',
-
+      themeMode: ThemeMode.system,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF7B5EA7),
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
       ),
-
-      home: startScreen,
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF7B5EA7),
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      home: const SplashScreen(),
     );
   }
+}
+
+// ── تتكال من SplashScreen بعد الأنيميشن ─────
+Future<Widget> resolveStartScreen() async {
+  final prefs = await SharedPreferences.getInstance();
+  final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
+
+  if (!seenOnboarding) return const OnboardingScreen();
+
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return const LoginScreen();
+
+  await user.reload();
+  final refreshedUser = FirebaseAuth.instance.currentUser;
+  if (refreshedUser == null) return const LoginScreen();
+
+  return refreshedUser.emailVerified
+      ? const HomeScreen()
+      : const VerifyEmailScreen();
 }
