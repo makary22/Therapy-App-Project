@@ -20,8 +20,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.3'   # ✅ غيّر لآخر stable version
-          channel: 'stable'           # ✅ stable مش master
+          flutter-version: '3.41.5'
+          channel: 'master'
 
       - name: Flutter precache iOS
         run: flutter precache --ios
