@@ -33,7 +33,20 @@ Future<Widget> _resolveStartScreen({required bool seenOnboarding}) async {
     return const LoginScreen();
   }
 
-  await user.reload();
+ 
+  try {
+    await user.reload().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+      
+        debugPrint('User reload timed out, using cached data');
+      },
+    );
+  } catch (e) {
+    debugPrint('User reload failed: $e');
+    
+  }
+
   final refreshedUser = FirebaseAuth.instance.currentUser;
 
   if (refreshedUser == null) {
