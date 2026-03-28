@@ -13,13 +13,38 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await PushNotificationService.initialize();
-  runApp(const MyApp());
+
+  final prefs = await SharedPreferences.getInstance();
+
+  final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
+
+  final startScreen = await _resolveStartScreen(seenOnboarding: seenOnboarding);
+
+  runApp(MyApp(startScreen: startScreen));
 }
+
+Future<Widget> _resolveStartScreen({required bool seenOnboarding}) async {
+  if (!seenOnboarding) {
+    return const OnboardingScreen();
+  }
+
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    return const LoginScreen();
+  }
+
+  await user.reload();
+  final refreshedUser = FirebaseAuth.instance.currentUser;
+
+  if (refreshedUser == null) {
+    return const LoginScreen();
+  }
 
   return refreshedUser.emailVerified
       ? const HomeScreen()
       : const VerifyEmailScreen();
 }
+
 class MyApp extends StatelessWidget {
   final Widget startScreen;
 
@@ -34,34 +59,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF7B5EA7),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
-      home: const SplashScreen(),
+
+      home: startScreen,
     );
   }
-}
-
-// ── تتكال من SplashScreen بعد الأنيميشن ─────
-Future<Widget> resolveStartScreen() async {
-  final prefs = await SharedPreferences.getInstance();
-  final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
-
-  if (!seenOnboarding) return const OnboardingScreen();
-
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) return const LoginScreen();
-
-  await user.reload();
-  final refreshedUser = FirebaseAuth.instance.currentUser;
-  if (refreshedUser == null) return const LoginScreen();
-
-  return refreshedUser.emailVerified
-      ? const HomeScreen()
-      : const VerifyEmailScreen();
 }
