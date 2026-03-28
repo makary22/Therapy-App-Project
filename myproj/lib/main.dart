@@ -14,50 +14,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await PushNotificationService.initialize();
-
-  final prefs = await SharedPreferences.getInstance();
-
-  final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
-
-  final startScreen = await _resolveStartScreen(seenOnboarding: seenOnboarding);
-
-  runApp(MyApp(startScreen: startScreen));
+  runApp(const MyApp());
 }
 
-Future<Widget> _resolveStartScreen({required bool seenOnboarding}) async {
-  if (!seenOnboarding) {
-    return const OnboardingScreen();
-  }
-
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) {
-    return const LoginScreen();
-  }
-
- 
-  try {
-    await user.reload().timeout(
-      const Duration(seconds: 5),
-      onTimeout: () {
-        
-        debugPrint('User reload timed out, using cached data');
-      },
-    );
-  } catch (e) {
-    debugPrint('User reload failed: $e');
-   
-  }
-
-  final refreshedUser = FirebaseAuth.instance.currentUser;
-
-  if (refreshedUser == null) {
-    return const LoginScreen();
-  }
-
-  return refreshedUser.emailVerified
-      ? const HomeScreen()
-      : const VerifyEmailScreen();
-}
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -88,7 +47,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ── تتكال من SplashScreen بعد الأنيميشن ─────
+
 Future<Widget> resolveStartScreen() async {
   final prefs = await SharedPreferences.getInstance();
   final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
