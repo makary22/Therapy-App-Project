@@ -75,7 +75,7 @@ To build a release APK:
 flutter build apk --release
 ```
 
-### iOS (macOS فقط)
+### iOS (macOS)
 
 ```bash
 flutter pub get
@@ -154,7 +154,7 @@ flutter test
 
 ## Troubleshooting
 
-### 1) Firebase initialization أو auth errors
+### 1) Firebase initialization or auth errors
 
 - Make sure `google-services.json` exists and is valid.
 - Make sure the package name matches the Firebase app.
