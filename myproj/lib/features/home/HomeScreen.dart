@@ -269,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 1.5,
             ),
             decoration: InputDecoration(
-              hintText: 'When the world feels too small to hold you, you’ll always find a place in my heart.',
+              hintText: 'When the world feels too small to hold you, you’ll always find a place in my heart..💜',
               hintStyle: const TextStyle(
                 color: Color(0xFFA5A3AE),
                 fontSize: 14,
