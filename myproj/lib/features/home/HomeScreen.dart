@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../chat/ChatScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -268,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 1.5,
             ),
             decoration: InputDecoration(
-              hintText: 'Write freely, no judgment here...',
+              hintText: 'When the world feels too small to hold you, you’ll always find a place in my heart.',
               hintStyle: const TextStyle(
                 color: Color(0xFFA5A3AE),
                 fontSize: 14,
@@ -348,16 +349,27 @@ class _HomeScreenState extends State<HomeScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(30),
           onTap: () {
-            if (_dayReflectionController.text.trim().isNotEmpty ||
-                _selectedMood != null ||
-                _selectedRating > 0) {
+            final String initialMessage = _dayReflectionController.text.trim();
+            if (initialMessage.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Reflection sent to AI for analysis! ✨'),
+                  content: Text('Please write your reflection first.'),
                   backgroundColor: Color(0xFF6D4A97),
                 ),
               );
+              return;
             }
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatScreen(
+                  initialMessage: initialMessage,
+                  initialMood: _selectedMood,
+                  initialRating: _selectedRating,
+                ),
+              ),
+            );
           },
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
