@@ -1,9 +1,11 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'AdviceSummaryScreen.dart';
+import 'ai_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String initialMessage;
@@ -34,8 +36,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ── Colors (matches HomeScreen) ──
   static const Color _purple = Color(0xFF7B5EA7);
-  static const Color _pink = Color(0xFFD45DA1);
-  static const Color _dark = Color(0xFF1A1A2E);
   static const Color _bg = Color(0xFFF4F1F8);
   static const Color _cardBg = Color(0xFFECE9F2);
   static const Color _textPrimary = Color(0xFF1E1F29);
@@ -85,30 +85,42 @@ class _ChatScreenState extends State<ChatScreen> {
     _activeSessionIndex = _sessions.length - 1;
     _saveSessions();
 
-    // Simulate AI response for the initial message
     Future.delayed(
-        const Duration(milliseconds: 800), () => _simulateAIResponse());
+      const Duration(milliseconds: 800),
+      () => _simulateAIResponse(firstMessage),
+    );
   }
 
-  void _simulateAIResponse() {
+  Future<void> _simulateAIResponse(String userMessage) async {
     if (!mounted) return;
     setState(() => _isTyping = true);
     _scrollToBottom();
 
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
-      setState(() {
-        _isTyping = false;
-        _currentMessages.add({
-          'text':
-              "Thank you for sharing that with me 💜\n\nI can hear that you've been carrying a lot today. It's completely okay to feel this way — your feelings are valid.\n\nWould you like to explore what's been weighing on you most, or would you prefer some grounding suggestions for right now?",
-          'isUser': false,
-          'timestamp': DateTime.now(),
-        });
+    String reply;
+    try {
+      reply = await AIService.sendConversationMessage(
+        messages: _currentMessages,
+        memoryContext: _buildMemoryContext(),
+      );
+    } catch (e, st) {
+      debugPrint('Gemini initial reply error: $e');
+      debugPrint(st.toString());
+      reply = kDebugMode
+          ? 'Gemini error: $e'
+          : "Thank you for sharing that with me. I am here with you, and we can take this one step at a time.";
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isTyping = false;
+      _currentMessages.add({
+        'text': reply,
+        'isUser': false,
+        'timestamp': DateTime.now(),
       });
-      _saveSessions();
-      _scrollToBottom();
     });
+    _saveSessions();
+    _scrollToBottom();
   }
 
   List<Map<String, dynamic>> get _currentMessages {
@@ -121,16 +133,46 @@ class _ChatScreenState extends State<ChatScreen> {
         as List<Map<String, dynamic>>;
   }
 
+  String _buildMemoryContext() {
+    if (_sessions.isEmpty || _activeSessionIndex <= 0) {
+      return '';
+    }
+
+    final buffer = StringBuffer();
+    for (var sessionIndex = 0;
+        sessionIndex < _activeSessionIndex;
+        sessionIndex++) {
+      final session = _sessions[sessionIndex];
+      final String date =
+          (session['date'] as String?) ?? 'Session ${sessionIndex + 1}';
+      final messages = session['messages'] as List<Map<String, dynamic>>;
+
+      buffer.writeln('Session ${sessionIndex + 1} [$date]');
+      for (final message in messages) {
+        final String text = (message['text'] as String? ?? '').trim();
+        if (text.isEmpty) continue;
+
+        final bool isUser = (message['isUser'] ?? false) == true;
+        buffer.writeln('${isUser ? 'User' : 'Assistant'}: $text');
+      }
+      buffer.writeln();
+    }
+
+    return buffer.toString().trim();
+  }
+
   // ─────────────────────────────────────────────────────────────
   // SEND MESSAGE
   // ─────────────────────────────────────────────────────────────
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     final String message = _messageController.text.trim();
     if (message.isEmpty || _isTyping) return;
 
+    final String userMessage = message;
+
     setState(() {
       _currentMessages.add({
-        'text': message,
+        'text': userMessage,
         'isUser': true,
         'timestamp': DateTime.now(),
       });
@@ -141,21 +183,31 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.clear();
     _scrollToBottom();
 
-    // TODO: Replace with real Gemini API call
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
-      setState(() {
-        _isTyping = false;
-        _currentMessages.add({
-          'text':
-              'I hear you. That sounds really challenging. Remember, it\'s okay to take things one step at a time 🌿',
-          'isUser': false,
-          'timestamp': DateTime.now(),
-        });
+    String reply;
+    try {
+      reply = await AIService.sendConversationMessage(
+        messages: _currentMessages,
+        memoryContext: _buildMemoryContext(),
+      );
+    } catch (e, st) {
+      debugPrint('Gemini send message error: $e');
+      debugPrint(st.toString());
+      reply = kDebugMode
+          ? 'Gemini error: $e'
+          : 'I hear you. That sounds really challenging. Remember, it\'s okay to take things one step at a time.';
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isTyping = false;
+      _currentMessages.add({
+        'text': reply,
+        'isUser': false,
+        'timestamp': DateTime.now(),
       });
-      _saveSessions();
-      _scrollToBottom();
     });
+    _saveSessions();
+    _scrollToBottom();
   }
 
   Future<void> _loadSessions() async {
@@ -617,13 +669,14 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                     ],
                   ),
-                  child: Text(
+                  child: SelectableText(
                     text,
                     style: TextStyle(
                       fontSize: 14,
                       color: isUser ? Colors.white : _textPrimary,
                       height: 1.5,
                     ),
+                    textAlign: TextAlign.start,
                   ),
                 ),
               ),

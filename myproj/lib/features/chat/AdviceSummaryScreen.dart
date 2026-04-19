@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 
+import 'ai_service.dart';
+
 class AdviceSummaryScreen extends StatelessWidget {
   final List<Map<String, dynamic>> messages;
+  final Future<Map<String, String>> _summaryFuture;
 
-  const AdviceSummaryScreen({
+  AdviceSummaryScreen({
     super.key,
     required this.messages,
-  });
+  }) : _summaryFuture =
+            AIService.generateConversationSummary(messages: messages);
 
   // ── Colors (matches Home + Chat) ──
   static const Color _purple = Color(0xFF7B5EA7);
@@ -43,8 +47,15 @@ class AdviceSummaryScreen extends StatelessWidget {
         ['anxious', 'anxiety', 'worried', 'nervous', 'panic', 'قلق', 'خايف']);
     final bool hasSadness = _containsAny(fullUserText,
         ['sad', 'cry', 'depressed', 'hopeless', 'empty', 'حزين', 'زهقت']);
-    final bool hasStress = _containsAny(fullUserText,
-        ['stress', 'overwhelm', 'tired', 'exhaust', 'pressure', 'تعبان', 'ضغط']);
+    final bool hasStress = _containsAny(fullUserText, [
+      'stress',
+      'overwhelm',
+      'tired',
+      'exhaust',
+      'pressure',
+      'تعبان',
+      'ضغط'
+    ]);
     final bool hasPositive = _containsAny(fullUserText,
         ['happy', 'great', 'good', 'productive', 'grateful', 'كويس', 'تمام']);
     final bool hasAnger = _containsAny(fullUserText,
@@ -153,6 +164,107 @@ class AdviceSummaryScreen extends StatelessWidget {
   bool _containsAny(String text, List<String> keywords) =>
       keywords.any((k) => text.contains(k));
 
+  bool _looksArabic(String text) {
+    return RegExp(r'[\u0600-\u06FF]').hasMatch(text);
+  }
+
+  TextDirection _summaryDirection(Map<String, dynamic> data) {
+    final headline = (data['headline'] as String? ?? '');
+    final insight = (data['insight'] as String? ?? '');
+    final mood = (data['mood'] as String? ?? '');
+    final combined = '$headline $insight $mood';
+    return _looksArabic(combined) ? TextDirection.rtl : TextDirection.ltr;
+  }
+
+  String _cleanDisplayText(String text) {
+    return text
+        .replaceAll('\r\n', '\n')
+        .replaceAll(RegExp(r'[\*_`]+'), '')
+        .replaceAll(RegExp(r'^[\s]*[-•–—]+[\s]*', multiLine: true), '')
+        .replaceAll(RegExp(r'^[\s]*\d+[\.)][\s]*', multiLine: true), '')
+        .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+        .trim();
+  }
+
+  Map<String, dynamic> _mergeSummaryWithAi(
+    Map<String, dynamic> local,
+    Map<String, String> ai,
+  ) {
+    final normalizedTag = _normalizeTag(ai['tag'] ?? local['tag'] as String);
+    final meta = _tagMeta(normalizedTag);
+
+    final headline = (ai['headline'] ?? '').trim();
+    final insight = (ai['insight'] ?? '').trim();
+
+    return {
+      ...local,
+      'tag': normalizedTag,
+      'tagEmoji': meta['tagEmoji'],
+      'tagColor': meta['tagColor'],
+      'tips': meta['tips'],
+      'headline': headline.isNotEmpty ? headline : local['headline'],
+      'insight': insight.isNotEmpty ? insight : local['insight'],
+      'isAiSummary': true,
+    };
+  }
+
+  String _normalizeTag(String rawTag) {
+    final tag = rawTag.trim().toUpperCase();
+    switch (tag) {
+      case 'ANXIOUS':
+      case 'HEAVY-HEARTED':
+      case 'FRUSTRATED':
+      case 'OVERWHELMED':
+      case 'THRIVING':
+      case 'REFLECTING':
+        return tag;
+      default:
+        return 'REFLECTING';
+    }
+  }
+
+  Map<String, dynamic> _tagMeta(String tag) {
+    switch (tag) {
+      case 'ANXIOUS':
+        return {
+          'tagEmoji': '🌊',
+          'tagColor': const Color(0xFF7B9FD4),
+          'tips': _anxietyTips(),
+        };
+      case 'HEAVY-HEARTED':
+        return {
+          'tagEmoji': '🌧️',
+          'tagColor': const Color(0xFF9B8EC4),
+          'tips': _sadnessTips(),
+        };
+      case 'FRUSTRATED':
+        return {
+          'tagEmoji': '🔥',
+          'tagColor': const Color(0xFFD47B7B),
+          'tips': _angerTips(),
+        };
+      case 'OVERWHELMED':
+        return {
+          'tagEmoji': '⚡',
+          'tagColor': const Color(0xFFD4A57B),
+          'tips': _stressTips(),
+        };
+      case 'THRIVING':
+        return {
+          'tagEmoji': '🌱',
+          'tagColor': const Color(0xFF7EC8A4),
+          'tips': _positiveTips(),
+        };
+      case 'REFLECTING':
+      default:
+        return {
+          'tagEmoji': '🌿',
+          'tagColor': _purple,
+          'tips': _defaultTips(),
+        };
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────
   // TIPS SETS
   // ─────────────────────────────────────────────────────────────
@@ -170,7 +282,8 @@ class AdviceSummaryScreen extends StatelessWidget {
         {
           'icon': Icons.self_improvement_rounded,
           'title': 'Body Scan',
-          'subtitle': 'Close your eyes. Notice where tension lives in your body.',
+          'subtitle':
+              'Close your eyes. Notice where tension lives in your body.',
         },
       ];
 
@@ -206,7 +319,8 @@ class AdviceSummaryScreen extends StatelessWidget {
         {
           'icon': Icons.timer_outlined,
           'title': '10-Minute Pause',
-          'subtitle': 'Wait before responding. Give your cortisol time to drop.',
+          'subtitle':
+              'Wait before responding. Give your cortisol time to drop.',
         },
       ];
 
@@ -232,7 +346,8 @@ class AdviceSummaryScreen extends StatelessWidget {
         {
           'icon': Icons.star_outline_rounded,
           'title': 'Capture This Feeling',
-          'subtitle': 'Write what made today good. You\'ll want to remember it.',
+          'subtitle':
+              'Write what made today good. You\'ll want to remember it.',
         },
         {
           'icon': Icons.repeat_rounded,
@@ -269,51 +384,125 @@ class AdviceSummaryScreen extends StatelessWidget {
   // ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final data = _buildSummaryData();
-    final tips = data['tips'] as List<Map<String, dynamic>>;
-    final String mood = data['mood'] as String;
-    final int rating = data['rating'] as int;
-    final Color tagColor = data['tagColor'] as Color;
-    final int userMsgCount = data['userMsgCount'] as int;
+    return FutureBuilder<Map<String, String>>(
+      future: _summaryFuture,
+      builder: (context, snapshot) {
+        final bool isLoading =
+            snapshot.connectionState == ConnectionState.waiting;
 
-    return Scaffold(
-      backgroundColor: _bg,
-      appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Main insight card ──
-            _buildInsightCard(data, tagColor),
-            const SizedBox(height: 16),
-
-            // ── Session stats row ──
-            if (mood.isNotEmpty || rating > 0 || userMsgCount > 1)
-              _buildStatsRow(mood, rating, userMsgCount),
-
-            const SizedBox(height: 22),
-
-            // ── Tips section ──
-            const Text(
-              'GENTLE STEPS FORWARD',
-              style: TextStyle(
-                color: _textMuted,
-                letterSpacing: 1.6,
-                fontWeight: FontWeight.w700,
-                fontSize: 11,
+        if (isLoading) {
+          return Scaffold(
+            backgroundColor: _bg,
+            appBar: _buildAppBar(context),
+            body: const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color: _purple,
+                    ),
+                  ),
+                  SizedBox(height: 14),
+                  Text(
+                    'Generating your summary...',
+                    style: TextStyle(
+                      color: _textMuted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            ...tips.map((tip) => _buildTipCard(tip)),
+          );
+        }
 
-            const SizedBox(height: 28),
+        final localData = _buildSummaryData();
+        final data = snapshot.hasData
+            ? _mergeSummaryWithAi(localData, snapshot.data!)
+            : localData;
 
-            // ── Closing quote ──
-            _buildQuoteCard(),
-          ],
-        ),
-      ),
+        final tips = data['tips'] as List<Map<String, dynamic>>;
+        final String mood = data['mood'] as String;
+        final int rating = data['rating'] as int;
+        final Color tagColor = data['tagColor'] as Color;
+        final int userMsgCount = data['userMsgCount'] as int;
+        final bool isAiSummary = (data['isAiSummary'] ?? false) == true;
+
+        return Scaffold(
+          backgroundColor: _bg,
+          appBar: _buildAppBar(context),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (isLoading)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: LinearProgressIndicator(
+                      minHeight: 3,
+                      color: _purple,
+                      backgroundColor: Color(0xFFDCD4E8),
+                    ),
+                  ),
+
+                if (isAiSummary)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _cardBg2,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'AI-powered summary',
+                      style: TextStyle(
+                        color: _purple,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ),
+
+                // ── Main insight card ──
+                _buildInsightCard(data, tagColor),
+                const SizedBox(height: 16),
+
+                // ── Session stats row ──
+                if (mood.isNotEmpty || rating > 0 || userMsgCount > 1)
+                  _buildStatsRow(mood, rating, userMsgCount),
+
+                const SizedBox(height: 22),
+
+                // ── Tips section ──
+                const Text(
+                  'GENTLE STEPS FORWARD',
+                  style: TextStyle(
+                    color: _textMuted,
+                    letterSpacing: 1.6,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...tips.map((tip) => _buildTipCard(tip)),
+
+                const SizedBox(height: 28),
+
+                // ── Closing quote ──
+                _buildQuoteCard(),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -359,6 +548,11 @@ class AdviceSummaryScreen extends StatelessWidget {
   // INSIGHT CARD
   // ─────────────────────────────────────────────────────────────
   Widget _buildInsightCard(Map<String, dynamic> data, Color tagColor) {
+    final TextDirection direction = _summaryDirection(data);
+    final String headline =
+        _cleanDisplayText(data['headline'] as String? ?? '');
+    final String insight = _cleanDisplayText(data['insight'] as String? ?? '');
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -411,13 +605,19 @@ class AdviceSummaryScreen extends StatelessWidget {
           const SizedBox(height: 14),
 
           // Headline
-          Text(
-            data['headline'] as String,
-            style: TextStyle(
-              fontSize: 22,
-              height: 1.25,
-              fontWeight: FontWeight.w800,
-              color: tagColor == _purple ? _purple : _textPrimary,
+          Directionality(
+            textDirection: direction,
+            child: Text(
+              headline,
+              textAlign: direction == TextDirection.rtl
+                  ? TextAlign.right
+                  : TextAlign.left,
+              style: TextStyle(
+                fontSize: 22,
+                height: 1.25,
+                fontWeight: FontWeight.w800,
+                color: tagColor == _purple ? _purple : _textPrimary,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -437,12 +637,18 @@ class AdviceSummaryScreen extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Insight text
-          Text(
-            data['insight'] as String,
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.6,
-              color: _textPrimary,
+          Directionality(
+            textDirection: direction,
+            child: Text(
+              insight,
+              textAlign: direction == TextDirection.rtl
+                  ? TextAlign.right
+                  : TextAlign.left,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.75,
+                color: _textPrimary,
+              ),
             ),
           ),
         ],
@@ -514,10 +720,8 @@ class AdviceSummaryScreen extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (icon != null)
-                Icon(icon, size: 14, color: _purple),
-              if (isEmoji)
-                Text(value, style: const TextStyle(fontSize: 16)),
+              if (icon != null) Icon(icon, size: 14, color: _purple),
+              if (isEmoji) Text(value, style: const TextStyle(fontSize: 16)),
               if (!isEmoji) ...[
                 const SizedBox(width: 3),
                 Text(

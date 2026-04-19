@@ -247,8 +247,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
+            children: [
+              const Text(
                 'How was your day?',
                 style: TextStyle(
                   fontSize: 17,
@@ -256,7 +256,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: _textPrimary,
                 ),
               ),
-              Icon(Icons.edit_note_rounded, color: Color(0xFFC79ABF), size: 22),
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChatScreen(
+                        initialMessage: '',
+                      ),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.edit_note_rounded,
+                      color: Color(0xFFC79ABF), size: 22),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -269,7 +286,8 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 1.5,
             ),
             decoration: InputDecoration(
-              hintText: 'When the world feels too small to hold you, you’ll always find a place in my heart..💜',
+              hintText:
+                  'When the world feels too small to hold you, you’ll always find a place in my heart..💜',
               hintStyle: const TextStyle(
                 color: Color(0xFFA5A3AE),
                 fontSize: 14,
