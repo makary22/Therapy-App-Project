@@ -166,271 +166,295 @@ class _LoginScreenState extends State<LoginScreen> {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) {
-          // ── Success state ──
-          if (emailSent) {
+      builder: (dialogContext) => Theme(
+        // ── Force light mode so the dialog is never affected by the phone's dark mode ──
+        data: ThemeData(
+          brightness: Brightness.light,
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFF1A1A2E),
+          ),
+          dialogBackgroundColor: Colors.white,
+          textTheme: const TextTheme(
+            bodyMedium: TextStyle(color: Color(0xFF333333)),
+          ),
+        ),
+        child: StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            // ── Success state ──
+            if (emailSent) {
+              return AlertDialog(
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 8),
+                    CircleAvatar(
+                      radius: 32,
+                      backgroundColor: Colors.green.shade50,
+                      child: Icon(
+                        Icons.mark_email_read_outlined,
+                        color: Colors.green.shade600,
+                        size: 36,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Email Sent!',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'A password reset link was sent to:\n$resetEmail\n\nCheck your inbox (and spam folder).',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF555555),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _darkBtn,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Got it'),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // ── Form state ──
             return AlertDialog(
+              backgroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 8),
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: Colors.green.shade50,
-                    child: Icon(
-                      Icons.mark_email_read_outlined,
-                      color: Colors.green.shade600,
-                      size: 36,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Email Sent!',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A2E),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'A password reset link was sent to:\n$resetEmail\n\nCheck your inbox (and spam folder).',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF555555),
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _darkBtn,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Got it'),
-                    ),
-                  ),
-                ],
+              title: const Text(
+                'Reset Password',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1A2E),
+                ),
               ),
-            );
-          }
-
-          // ── Form state ──
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text(
-              'Reset Password',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A2E),
-              ),
-            ),
-            content: Form(
-              key: resetFormKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Enter your email and we\'ll send you a reset link.',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF666666)),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    initialValue: resetEmail,
-                    decoration: InputDecoration(
-                      hintText: 'example@gmail.com',
-                      prefixIcon: const Icon(
-                        Icons.mail_outline,
-                        color: Color(0xFF9AA4B2),
-                        size: 20,
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFFF2F4F9),
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 16,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFDDDDDD),
-                          width: 1.2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF2B3E5C),
-                          width: 1.4,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Colors.redAccent,
-                          width: 1.2,
-                        ),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Colors.redAccent,
-                          width: 1.5,
-                        ),
-                      ),
+              content: Form(
+                key: resetFormKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Enter your email and we\'ll send you a reset link.',
+                      style: TextStyle(fontSize: 13, color: Color(0xFF666666)),
                     ),
-                    keyboardType: TextInputType.emailAddress,
-                    onChanged: (value) {
-                      resetEmail = value;
-                      if (dialogError != null) {
-                        setDialogState(() => dialogError = null);
-                      }
-                    },
-                    validator: (v) {
-                      final value = (v ?? '').trim();
-                      if (value.isEmpty) return 'Enter your email';
-                      if (!RegExp(
-                        r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-                      ).hasMatch(value)) {
-                        return 'Enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  // Firebase error
-                  if (dialogError != null) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          color: Colors.redAccent,
-                          size: 14,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: resetEmail,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF333333),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'example@gmail.com',
+                        hintStyle: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF9AA4B2),
                         ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            dialogError!,
-                            style: const TextStyle(
-                              color: Colors.redAccent,
-                              fontSize: 12,
-                            ),
+                        prefixIcon: const Icon(
+                          Icons.mail_outline,
+                          color: Color(0xFF9AA4B2),
+                          size: 20,
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF2F4F9),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 16,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFDDDDDD),
+                            width: 1.2,
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: isSending
-                    ? null
-                    : () => Navigator.of(dialogContext).pop(),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Color(0xFF888888)),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: isSending
-                    ? null
-                    : () async {
-                        if (resetFormKey.currentState?.validate() != true) {
-                          return;
-                        }
-
-                        final email = resetEmail.trim();
-                        setDialogState(() {
-                          isSending = true;
-                          dialogError = null;
-                        });
-
-                        try {
-                          debugPrint(
-                            '[ResetPassword] Sending reset email to: $email',
-                          );
-                          await FirebaseAuth.instance.sendPasswordResetEmail(
-                            email: email,
-                          );
-                          debugPrint(
-                            '[ResetPassword] ✅ Email sent successfully to: $email',
-                          );
-                          setDialogState(() {
-                            isSending = false;
-                            emailSent = true;
-                          });
-                        } on FirebaseAuthException catch (e) {
-                          debugPrint(
-                            '[ResetPassword] ❌ FirebaseAuthException: code=${e.code}, message=${e.message}',
-                          );
-                          String msg;
-                          if (e.code == 'user-not-found') {
-                            msg = 'No account found with this email address.';
-                          } else if (e.code == 'invalid-email') {
-                            msg = 'Invalid email address.';
-                          } else if (e.code == 'network-request-failed') {
-                            msg = 'No internet connection. Try again.';
-                          } else if (e.code == 'too-many-requests') {
-                            msg = 'Too many attempts. Try again later.';
-                          } else if (e.code == 'operation-not-allowed') {
-                            msg =
-                                'Email/Password is disabled in Firebase Console.';
-                          } else {
-                            msg =
-                                'Error (${e.code}): ${e.message ?? 'Failed to send reset email.'}';
-                          }
-                          setDialogState(() {
-                            isSending = false;
-                            dialogError = msg;
-                          });
-                        } catch (e) {
-                          debugPrint('[ResetPassword] ❌ Unexpected error: $e');
-                          setDialogState(() {
-                            isSending = false;
-                            dialogError =
-                                'Something went wrong. Please try again.';
-                          });
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF2B3E5C),
+                            width: 1.4,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Colors.redAccent,
+                            width: 1.2,
+                          ),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Colors.redAccent,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      onChanged: (value) {
+                        resetEmail = value;
+                        if (dialogError != null) {
+                          setDialogState(() => dialogError = null);
                         }
                       },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _darkBtn,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                      validator: (v) {
+                        final value = (v ?? '').trim();
+                        if (value.isEmpty) return 'Enter your email';
+                        if (!RegExp(
+                          r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                        ).hasMatch(value)) {
+                          return 'Enter a valid email';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    // Firebase error
+                    if (dialogError != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            color: Colors.redAccent,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              dialogError!,
+                              style: const TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSending
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Color(0xFF888888)),
                   ),
                 ),
-                child: isSending
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Send'),
-              ),
-            ],
-          );
-        },
+                ElevatedButton(
+                  onPressed: isSending
+                      ? null
+                      : () async {
+                          if (resetFormKey.currentState?.validate() != true) {
+                            return;
+                          }
+
+                          final email = resetEmail.trim();
+                          setDialogState(() {
+                            isSending = true;
+                            dialogError = null;
+                          });
+
+                          try {
+                            debugPrint(
+                              '[ResetPassword] Sending reset email to: $email',
+                            );
+                            await FirebaseAuth.instance
+                                .sendPasswordResetEmail(email: email);
+                            debugPrint(
+                              '[ResetPassword] ✅ Email sent successfully to: $email',
+                            );
+                            setDialogState(() {
+                              isSending = false;
+                              emailSent = true;
+                            });
+                          } on FirebaseAuthException catch (e) {
+                            debugPrint(
+                              '[ResetPassword] ❌ FirebaseAuthException: code=${e.code}, message=${e.message}',
+                            );
+                            String msg;
+                            if (e.code == 'user-not-found') {
+                              msg = 'No account found with this email address.';
+                            } else if (e.code == 'invalid-email') {
+                              msg = 'Invalid email address.';
+                            } else if (e.code == 'network-request-failed') {
+                              msg = 'No internet connection. Try again.';
+                            } else if (e.code == 'too-many-requests') {
+                              msg = 'Too many attempts. Try again later.';
+                            } else if (e.code == 'operation-not-allowed') {
+                              msg =
+                                  'Email/Password is disabled in Firebase Console.';
+                            } else {
+                              msg =
+                                  'Error (${e.code}): ${e.message ?? 'Failed to send reset email.'}';
+                            }
+                            setDialogState(() {
+                              isSending = false;
+                              dialogError = msg;
+                            });
+                          } catch (e) {
+                            debugPrint(
+                              '[ResetPassword] ❌ Unexpected error: $e',
+                            );
+                            setDialogState(() {
+                              isSending = false;
+                              dialogError =
+                                  'Something went wrong. Please try again.';
+                            });
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _darkBtn,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: isSending
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Send'),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -624,7 +648,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ],
-                      const SizedBox(height:10),
+                      const SizedBox(height: 10),
                       const Row(
                         children: [
                           Expanded(

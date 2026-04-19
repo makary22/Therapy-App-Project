@@ -7,6 +7,7 @@ import 'features/home/HomeScreen.dart' show HomeScreen;
 import 'features/notifications/push_notification_service.dart';
 import 'features/screens/login.dart' show LoginScreen;
 import 'features/screens/onboarding_screen.dart' show OnboardingScreen;
+import 'features/screens/splash_screen.dart' show SplashScreen;
 import 'features/screens/verify_email_screen.dart' show VerifyEmailScreen;
 
 void main() async {
@@ -33,7 +34,17 @@ Future<Widget> _resolveStartScreen({required bool seenOnboarding}) async {
     return const LoginScreen();
   }
 
-  await user.reload();
+  try {
+    await user.reload().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        debugPrint('User reload timed out, using cached data');
+      },
+    );
+  } catch (e) {
+    debugPrint('User reload failed: $e');
+  }
+
   final refreshedUser = FirebaseAuth.instance.currentUser;
 
   if (refreshedUser == null) {
@@ -55,12 +66,43 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Safe Space',
-
+      themeMode: ThemeMode.system,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF7B5EA7),
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
       ),
-
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF7B5EA7),
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
       home: startScreen,
     );
   }
+}
+
+// ── تتكال من SplashScreen بعد الأنيميشن ─────
+Future<Widget> resolveStartScreen() async {
+  final prefs = await SharedPreferences.getInstance();
+  final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
+
+  if (!seenOnboarding) return const OnboardingScreen();
+
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return const LoginScreen();
+
+  await user.reload();
+  final refreshedUser = FirebaseAuth.instance.currentUser;
+  if (refreshedUser == null) return const LoginScreen();
+
+  return refreshedUser.emailVerified
+      ? const HomeScreen()
+      : const VerifyEmailScreen();
 }
