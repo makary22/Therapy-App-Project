@@ -19,25 +19,29 @@ const _steps = [
   _StepData(
     icon: Icons.self_improvement_outlined,
     title: 'Relax your body',
-    body: 'Walk at a gentle pace and relax your shoulders. Let your arms swing naturally.',
+    body:
+        'Walk at a gentle pace and relax your shoulders. Let your arms swing naturally.',
     accent: Color(0xFFB39DDB),
   ),
   _StepData(
     icon: Icons.directions_walk_outlined,
     title: 'Feel the ground',
-    body: 'Notice how your feet touch the ground with each step — heel, arch, then toes.',
+    body:
+        'Notice how your feet touch the ground with each step — heel, arch, then toes.',
     accent: Color(0xFF9575CD),
   ),
   _StepData(
     icon: Icons.visibility_outlined,
     title: 'Engage your senses',
-    body: 'Name 3 things you see clearly around you and 2 distinct sounds you can hear.',
+    body:
+        'Name 3 things you see clearly around you and 2 distinct sounds you can hear.',
     accent: Color(0xFFCE93D8),
   ),
   _StepData(
     icon: Icons.air_outlined,
     title: 'Breathe deeply',
-    body: 'Take one slow, full breath every 20–30 seconds. Exhale for longer than you inhale.',
+    body:
+        'Take one slow, full breath every 20–30 seconds. Exhale for longer than you inhale.',
     accent: Color(0xFFF48FB1),
   ),
 ];
@@ -155,7 +159,7 @@ class _GroundingWalkScreenState extends State<GroundingWalkScreen>
     setState(
       () => _done.contains(i) ? _done.remove(i) : _done.add(i),
     );
-    
+
     // Check if all steps are now completed
     if (_done.length == _steps.length) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -171,11 +175,14 @@ class _GroundingWalkScreenState extends State<GroundingWalkScreen>
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
+        final bool isDark =
+            Theme.of(dialogContext).brightness == Brightness.dark;
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          backgroundColor: Colors.white.withOpacity(0.96),
+          backgroundColor:
+              isDark ? const Color(0xFF1E1F2A) : Colors.white.withOpacity(0.96),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -193,21 +200,21 @@ class _GroundingWalkScreenState extends State<GroundingWalkScreen>
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
+              Text(
                 'Amazing!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: _textPrimary,
+                  color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'You completed all steps. Great job staying grounded!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: _textMuted,
+                  color: isDark ? const Color(0xFFA8A6B5) : _textMuted,
                   fontSize: 14,
                   height: 1.4,
                 ),
@@ -253,8 +260,9 @@ class _GroundingWalkScreenState extends State<GroundingWalkScreen>
   // ────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
       appBar: _buildAppBar(),
       body: FadeTransition(
         opacity: _fadeIn,
@@ -298,24 +306,34 @@ class _GroundingWalkScreenState extends State<GroundingWalkScreen>
   }
 
   AppBar _buildAppBar() => AppBar(
-        backgroundColor: _bg,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF12131C)
+            : _bg,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Practice',
           style: TextStyle(
-            color: _textPrimary,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFFF1EEF8)
+                : _textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: 17,
           ),
         ),
-        iconTheme: const IconThemeData(color: _textPrimary),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFFF1EEF8)
+              : _textPrimary,
+        ),
       );
 
   Widget _sectionLabel(String text) => Text(
         text,
-        style: const TextStyle(
-          color: _textMuted,
+        style: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFFB5B2C4)
+              : _textMuted,
           letterSpacing: 1.6,
           fontWeight: FontWeight.w700,
           fontSize: 11,
@@ -355,7 +373,8 @@ class _HeroCard extends StatelessWidget {
           Positioned(
             right: -30,
             top: -30,
-            child: _GlowCircle(size: 140, color: Colors.white.withOpacity(0.07)),
+            child:
+                _GlowCircle(size: 140, color: Colors.white.withOpacity(0.07)),
           ),
           Positioned(
             right: 40,
@@ -436,22 +455,26 @@ class _GlowCircle extends StatelessWidget {
 class _BenefitBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: _purple.withOpacity(0.07),
+        color: isDark ? const Color(0xFF1A1C27) : _purple.withOpacity(0.07),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _purple.withOpacity(0.14)),
+        border: Border.all(
+            color:
+                isDark ? const Color(0xFF3A3B4D) : _purple.withOpacity(0.14)),
       ),
       child: Row(
         children: [
-          Icon(Icons.lightbulb_outline_rounded, color: _purple.withOpacity(0.8), size: 18),
+          Icon(Icons.lightbulb_outline_rounded,
+              color: _purple.withOpacity(0.8), size: 18),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
               'Brings focus back to your body and the present moment. Regular practice reduces anxiety and improves mindfulness.',
               style: TextStyle(
-                color: _textPrimary,
+                color: isDark ? const Color(0xFFE8E5F3) : _textPrimary,
                 fontSize: 13.5,
                 height: 1.55,
               ),
@@ -483,10 +506,11 @@ class _TimerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _cardBg,
+        color: isDark ? const Color(0xFF1A1C27) : _cardBg,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
@@ -502,10 +526,10 @@ class _TimerCard extends StatelessWidget {
             children: [
               const Icon(Icons.timer_outlined, color: _purple, size: 18),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Session Timer',
                 style: TextStyle(
-                  color: _textPrimary,
+                  color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                 ),
@@ -513,7 +537,9 @@ class _TimerCard extends StatelessWidget {
               const Spacer(),
               Text(
                 '8–10 min',
-                style: TextStyle(color: _textMuted, fontSize: 13),
+                style: TextStyle(
+                    color: isDark ? const Color(0xFFB5B2C4) : _textMuted,
+                    fontSize: 13),
               ),
             ],
           ),
@@ -521,8 +547,8 @@ class _TimerCard extends StatelessWidget {
           // Big time display
           Text(
             timeLabel,
-            style: const TextStyle(
-              color: _textPrimary,
+            style: TextStyle(
+              color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
               fontSize: 44,
               fontWeight: FontWeight.w800,
               letterSpacing: 2,
@@ -535,7 +561,8 @@ class _TimerCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress.clamp(0.0, 1.0),
               minHeight: 7,
-              backgroundColor: _purple.withOpacity(0.1),
+              backgroundColor:
+                  isDark ? const Color(0xFF353746) : _purple.withOpacity(0.1),
               valueColor: const AlwaysStoppedAnimation<Color>(_purple),
             ),
           ),
@@ -546,7 +573,8 @@ class _TimerCard extends StatelessWidget {
               Expanded(
                 child: _PillButton(
                   label: running ? 'Pause' : 'Start',
-                  icon: running ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  icon:
+                      running ? Icons.pause_rounded : Icons.play_arrow_rounded,
                   filled: true,
                   onTap: onToggle,
                 ),
@@ -581,6 +609,7 @@ class _PillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -593,7 +622,9 @@ class _PillButton extends StatelessWidget {
                   end: Alignment.centerRight,
                 )
               : null,
-          color: filled ? null : _purple.withOpacity(0.08),
+          color: filled
+              ? null
+              : (isDark ? const Color(0xFF2D2F3E) : _purple.withOpacity(0.08)),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
@@ -604,7 +635,9 @@ class _PillButton extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: filled ? Colors.white : _purple,
+                color: filled
+                    ? Colors.white
+                    : (isDark ? const Color(0xFFD8C9F0) : _purple),
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
               ),
@@ -634,6 +667,7 @@ class _StepCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -642,7 +676,9 @@ class _StepCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: done ? data.accent.withOpacity(0.1) : _cardBg,
+          color: done
+              ? data.accent.withOpacity(isDark ? 0.2 : 0.1)
+              : (isDark ? const Color(0xFF1A1C27) : _cardBg),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: done ? data.accent.withOpacity(0.4) : Colors.transparent,
@@ -660,19 +696,45 @@ class _StepCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Step number / check
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              width: 32,
-              height: 32,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: done ? data.accent : data.accent.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: done
-                  ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
-                  : Icon(data.icon, color: data.accent, size: 16),
+            // Icon + explicit checkbox to show this card is interactive.
+            Column(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: done ? data.accent : data.accent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    data.icon,
+                    color: done ? Colors.white : data.accent,
+                    size: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: done
+                        ? data.accent
+                        : (isDark ? const Color(0xFF2A2B38) : Colors.white),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: done ? data.accent : data.accent.withOpacity(0.55),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: done
+                      ? const Icon(Icons.check_rounded,
+                          color: Colors.white, size: 14)
+                      : null,
+                ),
+              ],
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -682,7 +744,9 @@ class _StepCard extends StatelessWidget {
                   Text(
                     data.title,
                     style: TextStyle(
-                      color: done ? data.accent : _textPrimary,
+                      color: done
+                          ? data.accent
+                          : (isDark ? const Color(0xFFF1EEF8) : _textPrimary),
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                       decoration: done ? TextDecoration.lineThrough : null,
@@ -693,7 +757,9 @@ class _StepCard extends StatelessWidget {
                   Text(
                     data.body,
                     style: TextStyle(
-                      color: done ? _textMuted : _textPrimary,
+                      color: done
+                          ? (isDark ? const Color(0xFFB5B2C4) : _textMuted)
+                          : (isDark ? const Color(0xFFE8E5F3) : _textPrimary),
                       fontSize: 13.5,
                       height: 1.5,
                     ),
@@ -718,6 +784,7 @@ class _ProgressFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final allDone = done == total;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
@@ -727,13 +794,18 @@ class _ProgressFooter extends StatelessWidget {
         gradient: LinearGradient(
           colors: allDone
               ? [const Color(0xFF7B5EA7), const Color(0xFFD45DA1)]
-              : [_purple.withOpacity(0.06), _pink.withOpacity(0.04)],
+              : [
+                  isDark ? const Color(0xFF26283A) : _purple.withOpacity(0.06),
+                  isDark ? const Color(0xFF2D2334) : _pink.withOpacity(0.04)
+                ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: allDone ? Colors.transparent : _purple.withOpacity(0.12),
+          color: allDone
+              ? Colors.transparent
+              : (isDark ? const Color(0xFF3A3B4D) : _purple.withOpacity(0.12)),
         ),
       ),
       child: Row(
@@ -751,7 +823,9 @@ class _ProgressFooter extends StatelessWidget {
                 Text(
                   allDone ? 'Amazing! Walk complete 🎉' : 'Your progress',
                   style: TextStyle(
-                    color: allDone ? Colors.white : _textPrimary,
+                    color: allDone
+                        ? Colors.white
+                        : (isDark ? const Color(0xFFF1EEF8) : _textPrimary),
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                   ),
@@ -762,7 +836,9 @@ class _ProgressFooter extends StatelessWidget {
                       ? 'You completed all steps. Great job staying grounded!'
                       : '$done of $total steps completed',
                   style: TextStyle(
-                    color: allDone ? Colors.white70 : _textMuted,
+                    color: allDone
+                        ? Colors.white70
+                        : (isDark ? const Color(0xFFB5B2C4) : _textMuted),
                     fontSize: 13,
                   ),
                 ),

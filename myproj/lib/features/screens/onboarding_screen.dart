@@ -142,9 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             height: size.height * 0.4,
                             child: Image.asset(page.image),
                           ),
-
                           const SizedBox(height: 30),
-
                           Text(
                             page.title,
                             textAlign: TextAlign.center,
@@ -154,9 +152,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               color: Color(0xFF252648),
                             ),
                           ),
-
                           const SizedBox(height: 20),
-
                           Text(
                             page.description,
                             textAlign: TextAlign.center,
@@ -171,7 +167,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   },
                 ),
               ),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
@@ -179,9 +174,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   (index) => _Dot(isActive: _currentIndex == index),
                 ),
               ),
-
               const SizedBox(height: 16),
-
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                 child: isLastPage
@@ -264,7 +257,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ],
                       ),
               ),
-
               const SizedBox(height: 12),
             ],
           ),

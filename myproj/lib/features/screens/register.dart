@@ -166,8 +166,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF12131C) : Colors.white,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -187,7 +188,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // ── Top section with illustration ──
                   Container(
                     width: double.infinity,
-                    color: _bgTop,
+                    color: isDark ? const Color(0xFF1A1C27) : _bgTop,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -230,9 +231,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                               children: [
-                                const TextSpan(
+                                TextSpan(
                                   text: 'Sign ',
-                                  style: TextStyle(color: Color(0xFF1A1A2E)),
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? const Color(0xFFF1EEF8)
+                                        : const Color(0xFF1A1A2E),
+                                  ),
                                 ),
                                 TextSpan(
                                   text: 'Up',
@@ -242,11 +247,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
+                          Text(
                             'Create a new account',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Color(0xFF888888),
+                              color: isDark
+                                  ? const Color(0xFFA8A6B5)
+                                  : const Color(0xFF888888),
                             ),
                           ),
                           SizedBox(height: sectionSpacing),
@@ -350,7 +357,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 _obscurePassword
                                     ? Icons.visibility_off_outlined
                                     : Icons.visibility_outlined,
-                                color: Colors.grey,
+                                color: isDark
+                                    ? const Color(0xFFC6C3D3)
+                                    : Colors.grey,
                                 size: 20,
                               ),
                               onPressed: () => setState(
@@ -385,11 +394,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              const Text(
+                              Text(
                                 'I agree to terms and conditions',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Color(0xFF444444),
+                                  color: isDark
+                                      ? const Color(0xFFC6C3D3)
+                                      : const Color(0xFF444444),
                                 ),
                               ),
                             ],
@@ -411,8 +422,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             width: double.infinity,
                             height: 52,
                             child: ElevatedButton(
-                              onPressed:
-                                  (_isLoading ||
+                              onPressed: (_isLoading ||
                                       _isGoogleLoading ||
                                       _isFacebookLoading)
                                   ? null
@@ -456,11 +466,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                           // ── "Or sign up with" divider ──
                           SizedBox(height: sectionSpacing),
-                          const Row(
+                          Row(
                             children: [
                               Expanded(
                                 child: Divider(
-                                  color: Color(0xFFDDDDDD),
+                                  color: isDark
+                                      ? const Color(0xFF3A3B4D)
+                                      : const Color(0xFFDDDDDD),
                                   thickness: 1,
                                   endIndent: 12,
                                 ),
@@ -469,12 +481,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 'Or sign up with',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Color(0xFF888888),
+                                  color: isDark
+                                      ? const Color(0xFFC6C3D3)
+                                      : const Color(0xFF888888),
                                 ),
                               ),
                               Expanded(
                                 child: Divider(
-                                  color: Color(0xFFDDDDDD),
+                                  color: isDark
+                                      ? const Color(0xFF3A3B4D)
+                                      : const Color(0xFFDDDDDD),
                                   thickness: 1,
                                   indent: 12,
                                 ),
@@ -490,8 +506,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 child: _SocialButton(
                                   onTap:
                                       (_isGoogleLoading || _isFacebookLoading)
-                                      ? null
-                                      : _signUpWithGoogle,
+                                          ? null
+                                          : _signUpWithGoogle,
                                   label: 'Google',
                                   faIcon: FontAwesomeIcons.google,
                                   iconColor: const Color(0xFFDB4437),
@@ -503,8 +519,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 child: _SocialButton(
                                   onTap:
                                       (_isGoogleLoading || _isFacebookLoading)
-                                      ? null
-                                      : _signUpWithFacebook,
+                                          ? null
+                                          : _signUpWithFacebook,
                                   label: 'Facebook',
                                   faIcon: FontAwesomeIcons.facebook,
                                   iconColor: const Color(0xFF1877F2),
@@ -526,9 +542,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               child: RichText(
                                 text: TextSpan(
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
-                                    color: Color(0xFF888888),
+                                    color: isDark
+                                        ? const Color(0xFFC6C3D3)
+                                        : const Color(0xFF888888),
                                   ),
                                   children: [
                                     const TextSpan(
@@ -537,7 +555,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     TextSpan(
                                       text: 'Login',
                                       style: TextStyle(
-                                        color: _darkBtn,
+                                        color: isDark
+                                            ? const Color(0xFFF1EEF8)
+                                            : _darkBtn,
                                         fontWeight: FontWeight.bold,
                                         decoration: TextDecoration.underline,
                                       ),
@@ -573,6 +593,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     AutovalidateMode autovalidateMode = AutovalidateMode.disabled,
     String? Function(String?)? validator,
   }) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
@@ -581,21 +602,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
       onChanged: onChanged,
       autovalidateMode: autovalidateMode,
       validator: validator,
-      style: const TextStyle(fontSize: 14, color: Color(0xFF333333)),
+      style: TextStyle(
+        fontSize: 14,
+        color: isDark ? const Color(0xFFF1EEF8) : const Color(0xFF333333),
+      ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(fontSize: 14, color: Color(0xFFAAAAAA)),
-        prefixIcon: Icon(icon, color: const Color(0xFFAAAAAA), size: 20),
+        hintStyle: TextStyle(
+          fontSize: 14,
+          color: isDark ? const Color(0xFFA09DB0) : const Color(0xFFAAAAAA),
+        ),
+        prefixIcon: Icon(
+          icon,
+          color: isDark ? const Color(0xFFAAA7B7) : const Color(0xFFAAAAAA),
+          size: 20,
+        ),
         suffixIcon: suffixIcon,
         contentPadding: const EdgeInsets.symmetric(
           vertical: 14,
           horizontal: 16,
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: isDark ? const Color(0xFF2A2B38) : Colors.white,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFDDDDDD), width: 1.2),
+          borderSide: BorderSide(
+            color: isDark ? const Color(0xFF45465A) : const Color(0xFFDDDDDD),
+            width: 1.2,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -634,14 +668,17 @@ class _SocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: Colors.white,
+      color: isDark ? const Color(0xFF1A1C27) : Colors.white,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        splashColor: const Color(0xFFEDE8F5),
-        highlightColor: const Color(0xFFEDE8F5).withOpacity(0.5),
+        splashColor: isDark ? const Color(0xFF2B2D3D) : const Color(0xFFEDE8F5),
+        highlightColor:
+            (isDark ? const Color(0xFF2B2D3D) : const Color(0xFFEDE8F5))
+                .withOpacity(0.5),
         child: Container(
           height: 52,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -649,8 +686,10 @@ class _SocialButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: onTap == null
-                  ? const Color(0xFFEEEEEE)
-                  : const Color(0xFFDDDDDD),
+                  ? (isDark ? const Color(0xFF3F4153) : const Color(0xFFEEEEEE))
+                  : (isDark
+                      ? const Color(0xFF585A70)
+                      : const Color(0xFFDDDDDD)),
               width: 1.2,
             ),
           ),
@@ -676,7 +715,9 @@ class _SocialButton extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: onTap == null
                       ? const Color(0xFFAAAAAA)
-                      : const Color(0xFF1A1A2E),
+                      : (isDark
+                          ? const Color(0xFFF1EEF8)
+                          : const Color(0xFF1A1A2E)),
                 ),
               ),
             ],

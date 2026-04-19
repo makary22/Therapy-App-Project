@@ -66,20 +66,23 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
       appBar: AppBar(
-        backgroundColor: _bg,
+        backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Unload the Shore',
           style: TextStyle(
-            color: _textPrimary,
+            color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
-        iconTheme: const IconThemeData(color: _textPrimary),
+        iconTheme: IconThemeData(
+          color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
+        ),
       ),
       body: Stack(
         children: [
@@ -93,7 +96,7 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: _cardBg,
+                      color: isDark ? const Color(0xFF1A1C27) : _cardBg,
                       borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
@@ -123,14 +126,16 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
                           ),
                         ),
                         const SizedBox(width: 14),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Unload the Shore',
                                 style: TextStyle(
-                                  color: _textPrimary,
+                                  color: isDark
+                                      ? const Color(0xFFF1EEF8)
+                                      : _textPrimary,
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -139,7 +144,9 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
                               Text(
                                 'Write down 3 things that can wait until tomorrow',
                                 style: TextStyle(
-                                  color: _textMuted,
+                                  color: isDark
+                                      ? const Color(0xFFB5B2C4)
+                                      : _textMuted,
                                   fontSize: 14,
                                   height: 1.4,
                                 ),
@@ -155,7 +162,7 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: _cardBg,
+                      color: isDark ? const Color(0xFF1A1C27) : _cardBg,
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: Row(
@@ -165,8 +172,9 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
                         const SizedBox(width: 8),
                         Text(
                           'A gentle reset for tomorrow',
-                          style: const TextStyle(
-                            color: _textPrimary,
+                          style: TextStyle(
+                            color:
+                                isDark ? const Color(0xFFF1EEF8) : _textPrimary,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -180,32 +188,38 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          _purple.withOpacity(0.08),
-                          _pink.withOpacity(0.06)
+                          isDark
+                              ? _purple.withOpacity(0.18)
+                              : _purple.withOpacity(0.08),
+                          isDark
+                              ? _pink.withOpacity(0.12)
+                              : _pink.withOpacity(0.06)
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: _purple.withOpacity(0.12),
+                        color: isDark
+                            ? const Color(0xFF4A4058)
+                            : _purple.withOpacity(0.12),
                         width: 1,
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Unload the next 3 items without judgment. Keep them short, simple, and easy to revisit tomorrow.',
                       style: TextStyle(
-                        color: _textPrimary,
+                        color: isDark ? const Color(0xFFE8E5F3) : _textPrimary,
                         fontSize: 14,
                         height: 1.6,
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  const Text(
+                  Text(
                     'INPUTS',
                     style: TextStyle(
-                      color: _textMuted,
+                      color: isDark ? const Color(0xFFB5B2C4) : _textMuted,
                       letterSpacing: 1.6,
                       fontWeight: FontWeight.w700,
                       fontSize: 11,
@@ -215,16 +229,19 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
                   _buildThingField(
                     controller: _thing1Controller,
                     label: 'Thing 1',
+                    isDark: isDark,
                   ),
                   const SizedBox(height: 10),
                   _buildThingField(
                     controller: _thing2Controller,
                     label: 'Thing 2',
+                    isDark: isDark,
                   ),
                   const SizedBox(height: 10),
                   _buildThingField(
                     controller: _thing3Controller,
                     label: 'Thing 3',
+                    isDark: isDark,
                   ),
                   const SizedBox(height: 18),
                   SizedBox(
@@ -260,7 +277,9 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
                   margin: const EdgeInsets.symmetric(horizontal: 28),
                   padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.96),
+                    color: isDark
+                        ? const Color(0xFF1E1F2A)
+                        : Colors.white.withOpacity(0.96),
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(
@@ -287,11 +306,12 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
                         ),
                       ),
                       const SizedBox(height: 18),
-                      const Text(
+                      Text(
                         'Safe travels to sleep. See you tomorrow.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: _textPrimary,
+                          color:
+                              isDark ? const Color(0xFFF1EEF8) : _textPrimary,
                           fontSize: 18,
                           height: 1.45,
                           fontWeight: FontWeight.w700,
@@ -330,9 +350,10 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
   Widget _buildThingField({
     required TextEditingController controller,
     required String label,
+    required bool isDark,
   }) {
-    const Color surfaceColor = _cardBg;
-    const Color textColor = _textPrimary;
+    final Color surfaceColor = isDark ? const Color(0xFF1A1C27) : _cardBg;
+    final Color textColor = isDark ? const Color(0xFFF1EEF8) : _textPrimary;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
@@ -340,7 +361,7 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
         color: surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFE7E3EF),
+          color: isDark ? const Color(0xFF3A3B4D) : const Color(0xFFE7E3EF),
         ),
       ),
       child: TextField(
@@ -348,8 +369,9 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
         decoration: InputDecoration(
           labelText: label,
           hintText: 'What can wait until tomorrow?',
-          labelStyle: const TextStyle(color: textColor),
-          hintStyle: const TextStyle(color: _textMuted),
+          labelStyle: TextStyle(color: textColor),
+          hintStyle:
+              TextStyle(color: isDark ? const Color(0xFFB5B2C4) : _textMuted),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
@@ -365,7 +387,7 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
           filled: true,
           fillColor: surfaceColor,
         ),
-        style: const TextStyle(
+        style: TextStyle(
           color: textColor,
           fontWeight: FontWeight.w600,
         ),

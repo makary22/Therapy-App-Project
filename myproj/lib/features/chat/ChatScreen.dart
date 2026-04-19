@@ -363,8 +363,9 @@ class _ChatScreenState extends State<ChatScreen> {
   // ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -383,7 +384,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: _cardBg,
+                      color: isDark ? const Color(0xFF2A2B38) : _cardBg,
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: const Row(
@@ -416,8 +417,9 @@ class _ChatScreenState extends State<ChatScreen> {
   // APP BAR
   // ─────────────────────────────────────────────────────────────
   PreferredSizeWidget _buildAppBar() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return AppBar(
-      backgroundColor: _bg,
+      backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
       elevation: 0,
       centerTitle: true,
       leading: GestureDetector(
@@ -425,11 +427,14 @@ class _ChatScreenState extends State<ChatScreen> {
         child: Container(
           margin: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: _cardBg,
+            color: isDark ? const Color(0xFF2A2B38) : _cardBg,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: _textPrimary, size: 16),
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
+            size: 16,
+          ),
         ),
       ),
       title: Column(
@@ -449,11 +454,11 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ],
           ),
-          const Text(
+          Text(
             'AI Companion',
             style: TextStyle(
               fontSize: 11,
-              color: _textMuted,
+              color: isDark ? const Color(0xFFA8A6B5) : _textMuted,
               fontWeight: FontWeight.w400,
             ),
           ),
@@ -467,7 +472,7 @@ class _ChatScreenState extends State<ChatScreen> {
             margin: const EdgeInsets.only(right: 12, top: 10, bottom: 10),
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
-              color: _cardBg,
+              color: isDark ? const Color(0xFF2A2B38) : _cardBg,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -532,32 +537,41 @@ class _ChatScreenState extends State<ChatScreen> {
   // DATE DIVIDER
   // ─────────────────────────────────────────────────────────────
   Widget _buildDateDivider(String label) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
-          const Expanded(
-              child: Divider(color: Color(0xFFDDD9E8), thickness: 1)),
+          Expanded(
+            child: Divider(
+              color: isDark ? const Color(0xFF3A3B4D) : const Color(0xFFDDD9E8),
+              thickness: 1,
+            ),
+          ),
           const SizedBox(width: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: _cardBg,
+              color: isDark ? const Color(0xFF2A2B38) : _cardBg,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: _textMuted,
+                color: isDark ? const Color(0xFFA8A6B5) : _textMuted,
                 letterSpacing: 0.5,
               ),
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
-              child: Divider(color: Color(0xFFDDD9E8), thickness: 1)),
+          Expanded(
+            child: Divider(
+              color: isDark ? const Color(0xFF3A3B4D) : const Color(0xFFDDD9E8),
+              thickness: 1,
+            ),
+          ),
         ],
       ),
     );
@@ -567,6 +581,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // MESSAGE BUBBLE
   // ─────────────────────────────────────────────────────────────
   Widget _buildMessageBubble(Map<String, dynamic> message) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final bool isUser = message['isUser'] ?? false;
     final String text = message['text'] ?? '';
     final DateTime? timestamp = message['timestamp'] as DateTime?;
@@ -585,7 +600,7 @@ class _ChatScreenState extends State<ChatScreen> {
               margin: const EdgeInsets.only(bottom: 6),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: _cardBg,
+                color: isDark ? const Color(0xFF2A2B38) : _cardBg,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -654,7 +669,9 @@ class _ChatScreenState extends State<ChatScreen> {
                             end: Alignment.bottomRight,
                           )
                         : null,
-                    color: isUser ? null : Colors.white,
+                    color: isUser
+                        ? null
+                        : (isDark ? const Color(0xFF1A1C27) : Colors.white),
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(18),
                       topRight: const Radius.circular(18),
@@ -673,7 +690,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     text,
                     style: TextStyle(
                       fontSize: 14,
-                      color: isUser ? Colors.white : _textPrimary,
+                      color: isUser
+                          ? Colors.white
+                          : (isDark ? const Color(0xFFF1EEF8) : _textPrimary),
                       height: 1.5,
                     ),
                     textAlign: TextAlign.start,
@@ -708,6 +727,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // TYPING INDICATOR
   // ─────────────────────────────────────────────────────────────
   Widget _buildTypingIndicator() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -730,7 +750,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? const Color(0xFF1A1C27) : Colors.white,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(18),
                 topRight: Radius.circular(18),
@@ -769,10 +789,11 @@ class _ChatScreenState extends State<ChatScreen> {
   // INPUT BAR
   // ─────────────────────────────────────────────────────────────
   Widget _buildInputBar() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1A1C27) : Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -793,15 +814,22 @@ class _ChatScreenState extends State<ChatScreen> {
                 minLines: 1,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _sendMessage(),
-                style: const TextStyle(fontSize: 14, color: _textPrimary),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Share what\'s on your mind...',
-                  hintStyle: const TextStyle(
-                    color: Color(0xFFA5A3AE),
+                  hintStyle: TextStyle(
+                    color: isDark
+                        ? const Color(0xFFA09DB0)
+                        : const Color(0xFFA5A3AE),
                     fontSize: 14,
                   ),
                   filled: true,
-                  fillColor: const Color(0xFFF5F3F8),
+                  fillColor: isDark
+                      ? const Color(0xFF2A2B38)
+                      : const Color(0xFFF5F3F8),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
@@ -871,184 +899,214 @@ class _ChatScreenState extends State<ChatScreen> {
         initialChildSize: 0.6,
         minChildSize: 0.3,
         maxChildSize: 0.92,
-        builder: (_, scrollCtrl) => Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFFF4F1F8),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            children: [
-              // Handle
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFCBC8D3),
-                  borderRadius: BorderRadius.circular(2),
+        builder: (_, scrollCtrl) {
+          final bool isDark = Theme.of(context).brightness == Brightness.dark;
+          return Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFF4F1F8),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              children: [
+                // Handle
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF5D5B6C)
+                        : const Color(0xFFCBC8D3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
 
-              // Title
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                child: Row(
-                  children: const [
-                    Icon(Icons.history_rounded, color: _purple, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Chat History',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: _textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const Divider(height: 1, color: Color(0xFFE0DCF0)),
-
-              // Sessions list
-              Expanded(
-                child: _sessions.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.chat_bubble_outline,
-                                size: 48, color: Colors.grey[300]),
-                            const SizedBox(height: 10),
-                            Text(
-                              'No history yet',
-                              style: TextStyle(
-                                  color: Colors.grey[500], fontSize: 15),
-                            ),
-                          ],
+                // Title
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.history_rounded,
+                          color: _purple, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Chat History',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color:
+                              isDark ? const Color(0xFFF4F1FA) : _textPrimary,
                         ),
-                      )
-                    : ListView.builder(
-                        controller: scrollCtrl,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        itemCount: _sessions.length,
-                        itemBuilder: (_, i) {
-                          // Show newest first
-                          final int sessionIndex = _sessions.length - 1 - i;
-                          final session = _sessions[sessionIndex];
-                          final msgs =
-                              session['messages'] as List<Map<String, dynamic>>;
-                          final firstMsg = msgs.isNotEmpty ? msgs.first : null;
-                          final msgCount = msgs.length;
-                          final String mood =
-                              (firstMsg?['mood'] as String?) ?? '';
-                          final int rating = (firstMsg?['rating'] as int?) ?? 0;
-                          final String preview =
-                              (firstMsg?['text'] as String?) ?? '';
+                      ),
+                    ],
+                  ),
+                ),
 
-                          return GestureDetector(
-                            onTap: () => _openHistorySession(sessionIndex),
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.04),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                Divider(
+                  height: 1,
+                  color: isDark
+                      ? const Color(0xFF343647)
+                      : const Color(0xFFE0DCF0),
+                ),
+
+                // Sessions list
+                Expanded(
+                  child: _sessions.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.chat_bubble_outline,
+                                  size: 48,
+                                  color: isDark
+                                      ? const Color(0xFF646276)
+                                      : Colors.grey[300]),
+                              const SizedBox(height: 10),
+                              Text(
+                                'No history yet',
+                                style: TextStyle(
+                                    color: isDark
+                                        ? const Color(0xFFB5B2C4)
+                                        : Colors.grey[500],
+                                    fontSize: 15),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Date + mood row
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          if (mood.isNotEmpty)
-                                            Text(mood,
-                                                style: const TextStyle(
-                                                    fontSize: 18)),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            session['date'] as String,
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
-                                              color: _textPrimary,
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: scrollCtrl,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          itemCount: _sessions.length,
+                          itemBuilder: (_, i) {
+                            // Show newest first
+                            final int sessionIndex = _sessions.length - 1 - i;
+                            final session = _sessions[sessionIndex];
+                            final msgs = session['messages']
+                                as List<Map<String, dynamic>>;
+                            final firstMsg =
+                                msgs.isNotEmpty ? msgs.first : null;
+                            final msgCount = msgs.length;
+                            final String mood =
+                                (firstMsg?['mood'] as String?) ?? '';
+                            final int rating =
+                                (firstMsg?['rating'] as int?) ?? 0;
+                            final String preview =
+                                (firstMsg?['text'] as String?) ?? '';
+
+                            return GestureDetector(
+                              onTap: () => _openHistorySession(sessionIndex),
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF232432)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(18),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.04),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Date + mood row
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            if (mood.isNotEmpty)
+                                              Text(mood,
+                                                  style: const TextStyle(
+                                                      fontSize: 18)),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              session['date'] as String,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: isDark
+                                                    ? const Color(0xFFF1EEF8)
+                                                    : _textPrimary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: isDark
+                                                ? const Color(0xFF2F3141)
+                                                : _cardBg,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            '$msgCount msgs',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: isDark
+                                                  ? const Color(0xFFB2AFC1)
+                                                  : _textMuted,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: _cardBg,
-                                          borderRadius:
-                                              BorderRadius.circular(10),
                                         ),
-                                        child: Text(
-                                          '$msgCount msgs',
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            color: _textMuted,
-                                            fontWeight: FontWeight.w600,
+                                      ],
+                                    ),
+
+                                    // Rating
+                                    if (rating > 0) ...[
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: List.generate(
+                                          5,
+                                          (j) => Icon(
+                                            j < rating
+                                                ? Icons.star_rounded
+                                                : Icons.star_outline_rounded,
+                                            size: 14,
+                                            color: j < rating
+                                                ? _purple
+                                                : const Color(0xFFCBC8D3),
                                           ),
                                         ),
                                       ),
                                     ],
-                                  ),
 
-                                  // Rating
-                                  if (rating > 0) ...[
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      children: List.generate(
-                                        5,
-                                        (j) => Icon(
-                                          j < rating
-                                              ? Icons.star_rounded
-                                              : Icons.star_outline_rounded,
-                                          size: 14,
-                                          color: j < rating
-                                              ? _purple
-                                              : const Color(0xFFCBC8D3),
-                                        ),
+                                    // Preview
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      preview,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: isDark
+                                            ? const Color(0xFFB2AFC1)
+                                            : _textMuted,
+                                        height: 1.4,
                                       ),
                                     ),
                                   ],
-
-                                  // Preview
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    preview,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: _textMuted,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

@@ -125,11 +125,14 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
+        final bool isDark =
+            Theme.of(dialogContext).brightness == Brightness.dark;
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          backgroundColor: Colors.white.withOpacity(0.96),
+          backgroundColor:
+              isDark ? const Color(0xFF1E1F2A) : Colors.white.withOpacity(0.96),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -147,21 +150,21 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
+              Text(
                 'You are finish',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: _textPrimary,
+                  color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Excellent. You completed 4 breathing cycles.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: _textMuted,
+                  color: isDark ? const Color(0xFFA8A6B5) : _textMuted,
                   fontSize: 14,
                   height: 1.4,
                 ),
@@ -273,23 +276,26 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final circleSize = 120.0 + (_breathLevel * 90.0);
     final phaseColor = _phaseColor();
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
       appBar: AppBar(
-        backgroundColor: _bg,
+        backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Box Breathing',
           style: TextStyle(
-            color: _textPrimary,
+            color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
-        iconTheme: const IconThemeData(color: _textPrimary),
+        iconTheme: IconThemeData(
+          color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -300,7 +306,7 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _cardBg,
+                color: isDark ? const Color(0xFF1A1C27) : _cardBg,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Column(
@@ -310,15 +316,16 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen> {
                     children: [
                       Text(
                         'Cycle $_completedRounds / $_targetRounds',
-                        style: const TextStyle(
-                          color: _textPrimary,
+                        style: TextStyle(
+                          color:
+                              isDark ? const Color(0xFFF1EEF8) : _textPrimary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
                         _formatElapsed(),
-                        style: const TextStyle(
-                          color: _textMuted,
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFFB5B2C4) : _textMuted,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -329,7 +336,9 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen> {
                     value: _sessionProgress(),
                     minHeight: 6,
                     borderRadius: BorderRadius.circular(10),
-                    backgroundColor: const Color(0xFFE7E1F0),
+                    backgroundColor: isDark
+                        ? const Color(0xFF353746)
+                        : const Color(0xFFE7E1F0),
                     color: _purple,
                   ),
                 ],
@@ -343,7 +352,7 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen> {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: _cardBg,
+                  color: isDark ? const Color(0xFF1A1C27) : _cardBg,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
@@ -429,8 +438,8 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen> {
                     Text(
                       _helperText(),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: _textMuted,
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFFB5B2C4) : _textMuted,
                         fontSize: 14,
                         height: 1.45,
                       ),
@@ -468,8 +477,11 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen> {
                       icon: const Icon(Icons.replay_rounded),
                       label: const Text('Reset Session'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE6DEEF),
-                        foregroundColor: _textPrimary,
+                        backgroundColor: isDark
+                            ? const Color(0xFF2A2C3A)
+                            : const Color(0xFFE6DEEF),
+                        foregroundColor:
+                            isDark ? const Color(0xFFF1EEF8) : _textPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -509,6 +521,7 @@ class _BoxPhaseIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: List.generate(4, (i) {
         final isActive = _phases[i] == phase;
@@ -524,10 +537,13 @@ class _BoxPhaseIndicator extends StatelessWidget {
                     children: [
                       Container(
                         height: 4,
-                        color: const Color(0xFFE7E1F0),
+                        color: isDark
+                            ? const Color(0xFF353746)
+                            : const Color(0xFFE7E1F0),
                       ),
                       if (isPast)
-                        Container(height: 4, color: phaseColor.withOpacity(0.5)),
+                        Container(
+                            height: 4, color: phaseColor.withOpacity(0.5)),
                       if (isActive)
                         FractionallySizedBox(
                           widthFactor: phaseProgress,
@@ -541,11 +557,12 @@ class _BoxPhaseIndicator extends StatelessWidget {
                   _labels[i],
                   style: TextStyle(
                     fontSize: 10,
-                    fontWeight:
-                        isActive ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                     color: isActive
                         ? phaseColor
-                        : const Color(0xFFBBB6C9),
+                        : (isDark
+                            ? const Color(0xFF8A8799)
+                            : const Color(0xFFBBB6C9)),
                   ),
                 ),
               ],

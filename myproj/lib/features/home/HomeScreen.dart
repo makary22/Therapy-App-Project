@@ -1,6 +1,12 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../chat/ChatScreen.dart';
+import '../screens/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +26,9 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedRating = 0;
   int _currentNavIndex = 0;
 
-  // ── Colors ──
+  Uint8List? _avatarBytes;
+  String _profileName = '';
+
   static const Color _purple = Color(0xFF7B5EA7);
   static const Color _pink = Color(0xFFD45DA1);
   static const Color _dark = Color(0xFF1A1A2E);
@@ -30,9 +38,38 @@ class _HomeScreenState extends State<HomeScreen> {
   static const Color _textMuted = Color(0xFF888888);
 
   @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  @override
   void dispose() {
     _dayReflectionController.dispose();
     super.dispose();
+  }
+
+  // Loads profile image and display name for the header.
+  Future<void> _loadProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final avatarBase64 = prefs.getString('profile_avatar_base64');
+    final savedName = (prefs.getString('profile_name') ?? '').trim();
+
+    final user = FirebaseAuth.instance.currentUser;
+    final displayName = (user?.displayName ?? '').trim();
+    final email = (user?.email ?? '').trim();
+
+    final resolvedName = savedName.isNotEmpty
+        ? savedName
+        : (displayName.isNotEmpty
+            ? displayName.split(' ').first
+            : (email.isNotEmpty ? email.split('@').first : 'Friend'));
+
+    if (!mounted) return;
+    setState(() {
+      _avatarBytes = avatarBase64 != null ? base64Decode(avatarBase64) : null;
+      _profileName = resolvedName;
+    });
   }
 
   String _greetingByTime() {
@@ -44,15 +81,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final User? user = FirebaseAuth.instance.currentUser;
-    final String displayName = (user?.displayName ?? '').trim();
-    final String email = (user?.email ?? '').trim();
-    final String name = displayName.isNotEmpty
-        ? displayName.split(' ').first
-        : (email.isNotEmpty ? email.split('@').first : 'Friend');
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final String name = _profileName.isNotEmpty ? _profileName : 'Friend';
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -61,11 +94,12 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 20),
             _buildGreeting(name),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Take a breath. How are you feeling right now?',
               style: TextStyle(
                 fontSize: 15,
-                color: Color(0xFF50505A),
+                color:
+                    isDark ? const Color(0xFFB0ADBE) : const Color(0xFF50505A),
                 fontWeight: FontWeight.w400,
                 height: 1.4,
               ),
@@ -84,43 +118,70 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // HEADER
-  // ─────────────────────────────────────────────────────────────
   Widget _buildHeader(String name) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final String initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.eco_outlined, size: 22, color: _purple),
-            SizedBox(width: 6),
+            Icon(
+              Icons.eco_outlined,
+              size: 22,
+              color: isDark ? const Color(0xFFE5DFF0) : _purple,
+            ),
+            const SizedBox(width: 6),
             Text(
               'Safe Space',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: _purple,
+                color: isDark ? const Color(0xFFE5DFF0) : _purple,
               ),
             ),
           ],
         ),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFD4D2DD), width: 2),
-          ),
-          child: CircleAvatar(
-            backgroundColor: _dark,
-            child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : 'U',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+        GestureDetector(
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            );
+            if (!mounted) return;
+            await _loadProfileData();
+          },
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color:
+                    isDark ? const Color(0xFF383A4A) : const Color(0xFFD4D2DD),
+                width: 2,
               ),
+            ),
+            child: ClipOval(
+              child: _avatarBytes != null
+                  ? Image.memory(
+                      _avatarBytes!,
+                      fit: BoxFit.cover,
+                      width: 44,
+                      height: 44,
+                    )
+                  : CircleAvatar(
+                      backgroundColor: isDark ? const Color(0xFF2D2F3D) : _dark,
+                      child: Text(
+                        initial,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
             ),
           ),
         ),
@@ -128,20 +189,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // GREETING
-  // ─────────────────────────────────────────────────────────────
   Widget _buildGreeting(String name) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return RichText(
       text: TextSpan(
         children: [
           TextSpan(
             text: '${_greetingByTime()},\n$name ',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 30,
               height: 1.2,
               fontWeight: FontWeight.w700,
-              color: _textPrimary,
+              color: isDark ? const Color(0xFFF2EEF9) : _textPrimary,
             ),
           ),
           const TextSpan(
@@ -153,13 +212,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // MOOD CARD
-  // ─────────────────────────────────────────────────────────────
   Widget _buildMoodCard() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: _cardBg,
+        color: isDark ? const Color(0xFF1A1C27) : _cardBg,
         borderRadius: BorderRadius.circular(24),
       ),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
@@ -168,13 +225,13 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text(
                 'Current Mood',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: _textPrimary,
+                  color: isDark ? const Color(0xFFF2EEF9) : _textPrimary,
                 ),
               ),
               Text(
@@ -182,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(
                   fontSize: 11,
                   letterSpacing: 1.6,
-                  color: _textMuted,
+                  color: isDark ? const Color(0xFFA8A6B5) : _textMuted,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -194,7 +251,6 @@ class _HomeScreenState extends State<HomeScreen> {
             children: List.generate(_moods.length, (index) {
               final String mood = _moods[index];
               final bool isSelected = _selectedMood == mood;
-
               return GestureDetector(
                 onTap: () => setState(() => _selectedMood = mood),
                 child: AnimatedContainer(
@@ -204,7 +260,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? const Color(0xFFE3D5FB)
-                        : const Color(0xFFF5F3F8),
+                        : (isDark
+                            ? const Color(0xFF2A2B38)
+                            : const Color(0xFFF5F3F8)),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: isSelected
                         ? [
@@ -212,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: _purple.withOpacity(0.18),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
-                            ),
+                            )
                           ]
                         : null,
                     border: isSelected
@@ -232,13 +290,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // DAY CARD
-  // ─────────────────────────────────────────────────────────────
   Widget _buildDayCard() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F0F5),
+        color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFF2F0F5),
         borderRadius: BorderRadius.circular(24),
       ),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
@@ -248,12 +304,12 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'How was your day?',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: _textPrimary,
+                  color: isDark ? const Color(0xFFF2EEF9) : _textPrimary,
                 ),
               ),
               InkWell(
@@ -261,9 +317,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ChatScreen(
-                        initialMessage: '',
-                      ),
+                      builder: (context) =>
+                          const ChatScreen(initialMessage: ''),
                     ),
                   );
                 },
@@ -280,21 +335,23 @@ class _HomeScreenState extends State<HomeScreen> {
           TextField(
             controller: _dayReflectionController,
             maxLines: 4,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: _textPrimary,
+              color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
               height: 1.5,
             ),
             decoration: InputDecoration(
               hintText:
-                  'When the world feels too small to hold you, you’ll always find a place in my heart..💜',
-              hintStyle: const TextStyle(
-                color: Color(0xFFA5A3AE),
+                  'When the world feels too small to hold you, you\'ll always find a place in my heart..💜',
+              hintStyle: TextStyle(
+                color:
+                    isDark ? const Color(0xFFA09DB0) : const Color(0xFFA5A3AE),
                 fontSize: 14,
                 height: 1.5,
               ),
               filled: true,
-              fillColor: const Color(0xFFE7E4ED),
+              fillColor:
+                  isDark ? const Color(0xFF2A2B38) : const Color(0xFFE7E4ED),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               border: OutlineInputBorder(
@@ -307,13 +364,14 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Rate your day',
                 style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF2D2E38),
-                  fontWeight: FontWeight.w600,
-                ),
+                    fontSize: 14,
+                    color: isDark
+                        ? const Color(0xFFD5D2E2)
+                        : const Color(0xFF2D2E38),
+                    fontWeight: FontWeight.w600),
               ),
               Row(
                 children: List.generate(5, (index) {
@@ -342,9 +400,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // SEND TO AI BUTTON
-  // ─────────────────────────────────────────────────────────────
   Widget _buildSendToAIButton() {
     return Container(
       decoration: BoxDecoration(
@@ -359,7 +414,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: const Color(0xFF6D4A97).withOpacity(0.25),
             blurRadius: 12,
             offset: const Offset(0, 5),
-          ),
+          )
         ],
       ),
       child: Material(
@@ -377,7 +432,6 @@ class _HomeScreenState extends State<HomeScreen> {
               );
               return;
             }
-
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -413,22 +467,20 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // RECENT REFLECTIONS
-  // ─────────────────────────────────────────────────────────────
   Widget _buildRecentReflectionsSection() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
+          children: [
             Text(
               'Recent Reflections',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: _textPrimary,
+                color: isDark ? const Color(0xFFF2EEF9) : _textPrimary,
               ),
             ),
             Text(
@@ -448,26 +500,30 @@ class _HomeScreenState extends State<HomeScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F3F8),
+              color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFF5F3F8),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
               children: [
                 Icon(Icons.auto_stories_outlined,
-                    size: 40, color: Colors.grey[350]),
+                    size: 40,
+                    color: isDark ? const Color(0xFF67657A) : Colors.grey[350]),
                 const SizedBox(height: 10),
                 Text(
                   'No reflections yet',
                   style: TextStyle(
                     fontSize: 15,
-                    color: Colors.grey[600],
+                    color: isDark ? const Color(0xFFC2BFCE) : Colors.grey[600],
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Write your first note and it will appear here.',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? const Color(0xFF9A97A8) : Colors.grey[500],
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -480,11 +536,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecentReflectionCard(Map<String, String> reflection) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F3F8),
+        color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFF5F3F8),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -495,11 +552,13 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(reflection['mood']!, style: const TextStyle(fontSize: 26)),
               Text(
                 reflection['date']!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF3B3C46),
+                  color: isDark
+                      ? const Color(0xFFC1BECE)
+                      : const Color(0xFF3B3C46),
                 ),
               ),
             ],
@@ -511,9 +570,11 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: Text(
                   reflection['text']!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF4D4E58),
+                    color: isDark
+                        ? const Color(0xFFC8C5D6)
+                        : const Color(0xFF4D4E58),
                     height: 1.45,
                   ),
                   maxLines: 2,
@@ -530,10 +591,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // BOTTOM NAVIGATION
-  // ─────────────────────────────────────────────────────────────
   Widget _buildBottomNavigation() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final List<Map<String, dynamic>> items = [
       {'icon': Icons.home_rounded, 'label': 'HOME'},
       {'icon': Icons.menu_book_outlined, 'label': 'JOURNAL'},
@@ -543,15 +602,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
-      decoration: const BoxDecoration(
-        color: Color(0xFFF0EEF5),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFF0EEF5),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 10,
-            offset: Offset(0, -2),
-          ),
+              color: Color(0x0F000000), blurRadius: 10, offset: Offset(0, -2))
         ],
       ),
       child: Row(
@@ -559,9 +615,22 @@ class _HomeScreenState extends State<HomeScreen> {
         children: List.generate(items.length, (index) {
           final item = items[index];
           final bool active = index == _currentNavIndex;
-
           return GestureDetector(
-            onTap: () => setState(() => _currentNavIndex = index),
+            onTap: () async {
+              if (index == 3) {
+                setState(() => _currentNavIndex = index);
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+                if (!mounted) return;
+                // FIX: reload الصورة والـ nickname بعد الرجوع
+                await _loadProfileData();
+                setState(() => _currentNavIndex = 0);
+                return;
+              }
+              setState(() => _currentNavIndex = index);
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: active
@@ -580,22 +649,21 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    item['icon'] as IconData,
-                    color: active ? Colors.white : const Color(0xFF8A9AB3),
-                    size: 20,
-                  ),
+                  Icon(item['icon'] as IconData,
+                      color: active
+                          ? Colors.white
+                          : (isDark
+                              ? const Color(0xFF9C9AAF)
+                              : const Color(0xFF8A9AB3)),
+                      size: 20),
                   if (active) ...[
                     const SizedBox(width: 6),
-                    Text(
-                      item['label'] as String,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+                    Text(item['label'] as String,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                            letterSpacing: 0.5)),
                   ],
                 ],
               ),

@@ -291,16 +291,19 @@ class AdviceSummaryScreen extends StatelessWidget {
       builder: (context, snapshot) {
         final bool isLoading =
             snapshot.connectionState == ConnectionState.waiting;
+        final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
         if (isLoading) {
           return Scaffold(
-            backgroundColor: _bg,
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF12131C)
+                : _bg,
             appBar: _buildAppBar(context),
-            body: const Center(
+            body: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 36,
                     height: 36,
                     child: CircularProgressIndicator(
@@ -308,11 +311,11 @@ class AdviceSummaryScreen extends StatelessWidget {
                       color: _purple,
                     ),
                   ),
-                  SizedBox(height: 14),
+                  const SizedBox(height: 14),
                   Text(
                     'Generating your summary...',
                     style: TextStyle(
-                      color: _textMuted,
+                      color: isDark ? const Color(0xFFB5B2C4) : _textMuted,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -336,7 +339,9 @@ class AdviceSummaryScreen extends StatelessWidget {
         final bool isAiSummary = (data['isAiSummary'] ?? false) == true;
 
         return Scaffold(
-          backgroundColor: _bg,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF12131C)
+              : _bg,
           appBar: _buildAppBar(context),
           body: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 32),
@@ -359,7 +364,7 @@ class AdviceSummaryScreen extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _cardBg2,
+                      color: isDark ? const Color(0xFF2B2D3D) : _cardBg2,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
@@ -374,20 +379,20 @@ class AdviceSummaryScreen extends StatelessWidget {
                   ),
 
                 // ── Main insight card ──
-                _buildInsightCard(data, tagColor),
+                _buildInsightCard(context, data, tagColor),
                 const SizedBox(height: 16),
 
                 // ── Session stats row ──
                 if (mood.isNotEmpty || rating > 0 || userMsgCount > 1)
-                  _buildStatsRow(mood, rating, userMsgCount),
+                  _buildStatsRow(context, mood, rating, userMsgCount),
 
                 const SizedBox(height: 22),
 
                 // ── Tips section ──
-                const Text(
+                Text(
                   'GENTLE STEPS FORWARD',
                   style: TextStyle(
-                    color: _textMuted,
+                    color: isDark ? const Color(0xFFB5B2C4) : _textMuted,
                     letterSpacing: 1.6,
                     fontWeight: FontWeight.w700,
                     fontSize: 11,
@@ -399,7 +404,7 @@ class AdviceSummaryScreen extends StatelessWidget {
                 const SizedBox(height: 28),
 
                 // ── Closing quote ──
-                _buildQuoteCard(),
+                _buildQuoteCard(context),
               ],
             ),
           ),
@@ -412,8 +417,9 @@ class AdviceSummaryScreen extends StatelessWidget {
   // APP BAR
   // ─────────────────────────────────────────────────────────────
   PreferredSizeWidget _buildAppBar(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return AppBar(
-      backgroundColor: _bg,
+      backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
       elevation: 0,
       centerTitle: true,
       leading: GestureDetector(
@@ -421,11 +427,14 @@ class AdviceSummaryScreen extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: _cardBg2,
+            color: isDark ? const Color(0xFF2A2B38) : _cardBg2,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: _textPrimary, size: 16),
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
+            size: 16,
+          ),
         ),
       ),
       title: const Row(
@@ -449,7 +458,9 @@ class AdviceSummaryScreen extends StatelessWidget {
   // ─────────────────────────────────────────────────────────────
   // INSIGHT CARD
   // ─────────────────────────────────────────────────────────────
-  Widget _buildInsightCard(Map<String, dynamic> data, Color tagColor) {
+  Widget _buildInsightCard(
+      BuildContext context, Map<String, dynamic> data, Color tagColor) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final TextDirection direction = _summaryDirection(data);
     final String headline =
         _cleanDisplayText(data['headline'] as String? ?? '');
@@ -459,7 +470,7 @@ class AdviceSummaryScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _cardBg,
+        color: isDark ? const Color(0xFF1A1C27) : _cardBg,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -518,7 +529,9 @@ class AdviceSummaryScreen extends StatelessWidget {
                 fontSize: 22,
                 height: 1.25,
                 fontWeight: FontWeight.w800,
-                color: tagColor == _purple ? _purple : _textPrimary,
+                color: tagColor == _purple
+                    ? _purple
+                    : (isDark ? const Color(0xFFF1EEF8) : _textPrimary),
               ),
             ),
           ),
@@ -546,10 +559,10 @@ class AdviceSummaryScreen extends StatelessWidget {
               textAlign: direction == TextDirection.rtl
                   ? TextAlign.right
                   : TextAlign.left,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 height: 1.75,
-                color: _textPrimary,
+                color: isDark ? const Color(0xFFE8E5F3) : _textPrimary,
               ),
             ),
           ),
@@ -561,11 +574,13 @@ class AdviceSummaryScreen extends StatelessWidget {
   // ─────────────────────────────────────────────────────────────
   // STATS ROW
   // ─────────────────────────────────────────────────────────────
-  Widget _buildStatsRow(String mood, int rating, int msgCount) {
+  Widget _buildStatsRow(
+      BuildContext context, String mood, int rating, int msgCount) {
     return Row(
       children: [
         if (mood.isNotEmpty)
           _statChip(
+            context: context,
             label: 'Mood',
             value: mood,
             isEmoji: true,
@@ -573,6 +588,7 @@ class AdviceSummaryScreen extends StatelessWidget {
         if (mood.isNotEmpty) const SizedBox(width: 10),
         if (rating > 0)
           _statChip(
+            context: context,
             label: 'Day Rating',
             value: '$rating / 5',
             icon: Icons.star_rounded,
@@ -580,6 +596,7 @@ class AdviceSummaryScreen extends StatelessWidget {
         if (rating > 0) const SizedBox(width: 10),
         if (msgCount > 1)
           _statChip(
+            context: context,
             label: 'Messages',
             value: '$msgCount',
             icon: Icons.chat_bubble_outline_rounded,
@@ -589,15 +606,17 @@ class AdviceSummaryScreen extends StatelessWidget {
   }
 
   Widget _statChip({
+    required BuildContext context,
     required String label,
     required String value,
     IconData? icon,
     bool isEmoji = false,
   }) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: _cardBg,
+        color: isDark ? const Color(0xFF1A1C27) : _cardBg,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -611,9 +630,9 @@ class AdviceSummaryScreen extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
-              color: _textMuted,
+              color: isDark ? const Color(0xFFB5B2C4) : _textMuted,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.3,
             ),
@@ -628,10 +647,10 @@ class AdviceSummaryScreen extends StatelessWidget {
                 const SizedBox(width: 3),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: _textPrimary,
+                    color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
                   ),
                 ),
               ],
@@ -646,6 +665,7 @@ class AdviceSummaryScreen extends StatelessWidget {
   // TIP CARD
   // ─────────────────────────────────────────────────────────────
   Widget _buildTipCard(BuildContext context, Map<String, dynamic> tip) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: () {
@@ -655,7 +675,7 @@ class AdviceSummaryScreen extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: _cardBg,
+          color: isDark ? const Color(0xFF1A1C27) : _cardBg,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
@@ -691,8 +711,8 @@ class AdviceSummaryScreen extends StatelessWidget {
                 children: [
                   Text(
                     tip['title'] as String,
-                    style: const TextStyle(
-                      color: _textPrimary,
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
@@ -700,8 +720,8 @@ class AdviceSummaryScreen extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     tip['subtitle'] as String,
-                    style: const TextStyle(
-                      color: _textMuted,
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFFB5B2C4) : _textMuted,
                       fontSize: 13,
                       height: 1.4,
                     ),
@@ -710,8 +730,10 @@ class AdviceSummaryScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded,
-                color: Color(0xFFBBB6C9), size: 22),
+            Icon(Icons.chevron_right_rounded,
+                color:
+                    isDark ? const Color(0xFF848193) : const Color(0xFFBBB6C9),
+                size: 22),
           ],
         ),
       ),
@@ -742,15 +764,16 @@ class AdviceSummaryScreen extends StatelessWidget {
   // ─────────────────────────────────────────────────────────────
   // QUOTE CARD
   // ─────────────────────────────────────────────────────────────
-  Widget _buildQuoteCard() {
+  Widget _buildQuoteCard(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            _purple.withOpacity(0.08),
-            _pink.withOpacity(0.06),
+            _purple.withOpacity(isDark ? 0.14 : 0.08),
+            _pink.withOpacity(isDark ? 0.10 : 0.06),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -762,23 +785,23 @@ class AdviceSummaryScreen extends StatelessWidget {
         ),
       ),
       child: Column(
-        children: const [
+        children: [
           Text(
             '"The sun will rise and we will try again"',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: _purple,
+              color: isDark ? const Color(0xFFD8C9F0) : _purple,
               fontSize: 16,
               fontStyle: FontStyle.italic,
               fontWeight: FontWeight.w600,
               height: 1.5,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             'SAFE SPACE AI',
             style: TextStyle(
-              color: _textMuted,
+              color: isDark ? const Color(0xFFB5B2C4) : _textMuted,
               letterSpacing: 2.5,
               fontSize: 10,
               fontWeight: FontWeight.w700,
