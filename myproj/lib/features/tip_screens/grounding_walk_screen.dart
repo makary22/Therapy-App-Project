@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import '../chat/AdviceSummaryScreen.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens  (mirror TipPracticeTemplate)
@@ -152,9 +151,102 @@ class _GroundingWalkScreenState extends State<GroundingWalkScreen>
   double get _progress => _elapsed / _totalSeconds;
 
   // ── Step toggle ──
-  void _toggleStep(int i) => setState(
-        () => _done.contains(i) ? _done.remove(i) : _done.add(i),
-      );
+  void _toggleStep(int i) {
+    setState(
+      () => _done.contains(i) ? _done.remove(i) : _done.add(i),
+    );
+    
+    // Check if all steps are now completed
+    if (_done.length == _steps.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showAmazingDialog();
+        }
+      });
+    }
+  }
+
+  void _showAmazingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: Colors.white.withOpacity(0.96),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: _purple.withOpacity(0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.emoji_events_rounded,
+                  color: _purple,
+                  size: 34,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Amazing!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'You completed all steps. Great job staying grounded!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _textMuted,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (_) => AdviceSummaryScreen(messages: []),
+                    ),
+                    (route) => false,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _purple,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'OK',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   // ────────────────────────────────────────────
   //  BUILD
