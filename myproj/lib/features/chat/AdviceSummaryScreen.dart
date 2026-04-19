@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'ai_service.dart';
+import '../tip_screens/box_breathing_screen.dart';
+import '../tip_screens/grounding_walk_screen.dart';
+import '../tip_screens/unload_shore_screen.dart';
 
 class AdviceSummaryScreen extends StatelessWidget {
   final List<Map<String, dynamic>> messages;
@@ -67,7 +70,6 @@ class AdviceSummaryScreen extends StatelessWidget {
     Color tagColor;
     String headline;
     String insight;
-    List<Map<String, dynamic>> tips;
 
     // Priority: mood emoji > rating > keywords
     final bool lowMood = mood == '😔' || mood == '😟';
@@ -85,7 +87,6 @@ class AdviceSummaryScreen extends StatelessWidget {
           'What you\'re feeling is real — and it makes sense. Your nervous system is trying to protect you, '
           'even when it doesn\'t feel helpful.\n\n'
           'The key right now is to signal safety to your body, not to solve everything at once.';
-      tips = _anxietyTips();
     } else if (hasSadness || (lowMood && !hasStress) || lowRating) {
       tag = 'HEAVY-HEARTED';
       tagEmoji = '🌧️';
@@ -96,7 +97,6 @@ class AdviceSummaryScreen extends StatelessWidget {
           'You don\'t have to rush through it or explain it to anyone.\n\n'
           'Being here and writing it out is already a courageous step. '
           'Allow yourself the space to feel without judgment.';
-      tips = _sadnessTips();
     } else if (hasAnger) {
       tag = 'FRUSTRATED';
       tagEmoji = '🔥';
@@ -107,7 +107,6 @@ class AdviceSummaryScreen extends StatelessWidget {
           'It\'s one of the most honest emotions we have.\n\n'
           'Rather than suppressing it, try to find what\'s underneath — '
           'is it hurt? Disappointment? Feeling unheard? That\'s where the real message lives.';
-      tips = _angerTips();
     } else if (hasStress || (lowRating && !hasSadness)) {
       tag = 'OVERWHELMED';
       tagEmoji = '⚡';
@@ -118,7 +117,6 @@ class AdviceSummaryScreen extends StatelessWidget {
           'and that includes you. Overwhelm usually means your plate is full, not that you are weak.\n\n'
           'Breaking things into smaller pieces and giving yourself permission to do less '
           'is not giving up — it\'s smart energy management.';
-      tips = _stressTips();
     } else if (hasPositive || highMood || highRating) {
       tag = 'THRIVING';
       tagEmoji = '🌱';
@@ -129,7 +127,6 @@ class AdviceSummaryScreen extends StatelessWidget {
           'noticing it and naming it matters.\n\n'
           'Keep building on these moments. Small consistent actions '
           'compound into the life you\'re working toward.';
-      tips = _positiveTips();
     } else {
       tag = 'REFLECTING';
       tagEmoji = '🌿';
@@ -140,8 +137,9 @@ class AdviceSummaryScreen extends StatelessWidget {
           'Life often exists in the gray areas between emotions.\n\n'
           'The fact that you took time to reflect means you\'re paying attention to yourself. '
           'That\'s the foundation of emotional awareness.';
-      tips = _defaultTips();
     }
+
+    final tips = _unifiedTips();
 
     // ── Message count stats ──
     final int userMsgCount = userMessages.length;
@@ -201,7 +199,7 @@ class AdviceSummaryScreen extends StatelessWidget {
       'tag': normalizedTag,
       'tagEmoji': meta['tagEmoji'],
       'tagColor': meta['tagColor'],
-      'tips': meta['tips'],
+      'tips': _unifiedTips(),
       'headline': headline.isNotEmpty ? headline : local['headline'],
       'insight': insight.isNotEmpty ? insight : local['insight'],
       'isAiSummary': true,
@@ -229,38 +227,32 @@ class AdviceSummaryScreen extends StatelessWidget {
         return {
           'tagEmoji': '🌊',
           'tagColor': const Color(0xFF7B9FD4),
-          'tips': _anxietyTips(),
         };
       case 'HEAVY-HEARTED':
         return {
           'tagEmoji': '🌧️',
           'tagColor': const Color(0xFF9B8EC4),
-          'tips': _sadnessTips(),
         };
       case 'FRUSTRATED':
         return {
           'tagEmoji': '🔥',
           'tagColor': const Color(0xFFD47B7B),
-          'tips': _angerTips(),
         };
       case 'OVERWHELMED':
         return {
           'tagEmoji': '⚡',
           'tagColor': const Color(0xFFD4A57B),
-          'tips': _stressTips(),
         };
       case 'THRIVING':
         return {
           'tagEmoji': '🌱',
           'tagColor': const Color(0xFF7EC8A4),
-          'tips': _positiveTips(),
         };
       case 'REFLECTING':
       default:
         return {
           'tagEmoji': '🌿',
           'tagColor': _purple,
-          'tips': _defaultTips(),
         };
     }
   }
@@ -268,114 +260,24 @@ class AdviceSummaryScreen extends StatelessWidget {
   // ─────────────────────────────────────────────────────────────
   // TIPS SETS
   // ─────────────────────────────────────────────────────────────
-  List<Map<String, dynamic>> _anxietyTips() => [
+  List<Map<String, dynamic>> _unifiedTips() => [
         {
+          'id': 'box_breathing',
           'icon': Icons.air_rounded,
           'title': 'Box Breathing',
-          'subtitle': 'Inhale 4s → Hold 4s → Exhale 4s. Repeat 4 times.',
+          'subtitle': '4 seconds in, 4 hold, 4 out.',
         },
         {
-          'icon': Icons.remove_red_eye_outlined,
-          'title': '5-4-3-2-1 Grounding',
-          'subtitle': 'Name 5 things you see, 4 you hear, 3 you can touch.',
+          'id': 'unload_shore',
+          'icon': Icons.edit_note_rounded,
+          'title': 'Unload the Shore',
+          'subtitle': 'Write down 3 things that can wait until tomorrow.',
         },
         {
-          'icon': Icons.self_improvement_rounded,
-          'title': 'Body Scan',
-          'subtitle':
-              'Close your eyes. Notice where tension lives in your body.',
-        },
-      ];
-
-  List<Map<String, dynamic>> _sadnessTips() => [
-        {
-          'icon': Icons.edit_outlined,
-          'title': 'Write It Out',
-          'subtitle': 'Let your feelings land on paper without editing them.',
-        },
-        {
-          'icon': Icons.people_outline_rounded,
-          'title': 'Reach Out',
-          'subtitle': 'Send one message to someone who makes you feel safe.',
-        },
-        {
-          'icon': Icons.bedtime_outlined,
-          'title': 'Rest Without Guilt',
-          'subtitle': 'Allow yourself to rest. Recovery is productive too.',
-        },
-      ];
-
-  List<Map<String, dynamic>> _angerTips() => [
-        {
-          'icon': Icons.directions_walk_rounded,
-          'title': 'Move Your Body',
-          'subtitle': 'Walk, stretch, or shake — anger needs physical release.',
-        },
-        {
-          'icon': Icons.question_mark_rounded,
-          'title': 'Ask Underneath',
-          'subtitle': 'What boundary was crossed? What really hurts here?',
-        },
-        {
-          'icon': Icons.timer_outlined,
-          'title': '10-Minute Pause',
-          'subtitle':
-              'Wait before responding. Give your cortisol time to drop.',
-        },
-      ];
-
-  List<Map<String, dynamic>> _stressTips() => [
-        {
-          'icon': Icons.checklist_rounded,
-          'title': 'Unload Tomorrow',
-          'subtitle': 'Write 3 things that can wait. Give them a future date.',
-        },
-        {
-          'icon': Icons.block_rounded,
-          'title': 'Say No Once Today',
-          'subtitle': 'Pick one thing you can decline or delegate right now.',
-        },
-        {
-          'icon': Icons.coffee_outlined,
-          'title': 'One-Minute Reset',
-          'subtitle': 'Step away. Make tea. Do one thing slowly and fully.',
-        },
-      ];
-
-  List<Map<String, dynamic>> _positiveTips() => [
-        {
-          'icon': Icons.star_outline_rounded,
-          'title': 'Capture This Feeling',
-          'subtitle':
-              'Write what made today good. You\'ll want to remember it.',
-        },
-        {
-          'icon': Icons.repeat_rounded,
-          'title': 'Identify What Worked',
-          'subtitle': 'What habit or decision helped today? Do more of that.',
-        },
-        {
-          'icon': Icons.favorite_outline_rounded,
-          'title': 'Share Gratitude',
-          'subtitle': 'Tell someone today that they made a difference.',
-        },
-      ];
-
-  List<Map<String, dynamic>> _defaultTips() => [
-        {
-          'icon': Icons.auto_stories_outlined,
-          'title': 'Daily Check-in',
-          'subtitle': 'Keep showing up. Consistency builds self-awareness.',
-        },
-        {
-          'icon': Icons.nature_outlined,
-          'title': 'Spend Time Outside',
-          'subtitle': 'Even 10 minutes of daylight shifts your nervous system.',
-        },
-        {
-          'icon': Icons.nights_stay_outlined,
-          'title': 'Protect Your Sleep',
-          'subtitle': 'A good night\'s rest resets more than you think.',
+          'id': 'grounding_walk',
+          'icon': Icons.park_outlined,
+          'title': 'Grounding Walk',
+          'subtitle': 'Focus on the feeling of your feet touching the earth.',
         },
       ];
 
@@ -492,7 +394,7 @@ class AdviceSummaryScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...tips.map((tip) => _buildTipCard(tip)),
+                ...tips.map((tip) => _buildTipCard(context, tip)),
 
                 const SizedBox(height: 28),
 
@@ -743,70 +645,97 @@ class AdviceSummaryScreen extends StatelessWidget {
   // ─────────────────────────────────────────────────────────────
   // TIP CARD
   // ─────────────────────────────────────────────────────────────
-  Widget _buildTipCard(Map<String, dynamic> tip) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: _cardBg,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFDAC7F7), Color(0xFFF0C9E6)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+  Widget _buildTipCard(BuildContext context, Map<String, dynamic> tip) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () {
+        _openTipScreen(context, tip['id'] as String? ?? '');
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFDAC7F7), Color(0xFFF0C9E6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
               ),
-              borderRadius: BorderRadius.circular(12),
+              child: Icon(
+                tip['icon'] as IconData,
+                size: 18,
+                color: _purple,
+              ),
             ),
-            child: Icon(
-              tip['icon'] as IconData,
-              size: 18,
-              color: _purple,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tip['title'] as String,
-                  style: const TextStyle(
-                    color: _textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tip['title'] as String,
+                    style: const TextStyle(
+                      color: _textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  tip['subtitle'] as String,
-                  style: const TextStyle(
-                    color: _textMuted,
-                    fontSize: 13,
-                    height: 1.4,
+                  const SizedBox(height: 3),
+                  Text(
+                    tip['subtitle'] as String,
+                    style: const TextStyle(
+                      color: _textMuted,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          const Icon(Icons.chevron_right_rounded,
-              color: Color(0xFFBBB6C9), size: 22),
-        ],
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right_rounded,
+                color: Color(0xFFBBB6C9), size: 22),
+          ],
+        ),
       ),
+    );
+  }
+
+  void _openTipScreen(BuildContext context, String tipId) {
+    Widget screen;
+    switch (tipId) {
+      case 'box_breathing':
+        screen = const BoxBreathingScreen();
+        break;
+      case 'unload_shore':
+        screen = const UnloadShoreScreen();
+        break;
+      case 'grounding_walk':
+      default:
+        screen = const GroundingWalkScreen();
+        break;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => screen),
     );
   }
 
