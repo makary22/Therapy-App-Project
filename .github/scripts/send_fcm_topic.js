@@ -123,7 +123,7 @@ async function main() {
   }
 
   const isMorning = type === 'morning';
-  const title = isMorning ? 'Safe Space Morning' : 'Safe Space Night';
+  const title = isMorning ? 'Safe Space' : 'Safe Space';
   const body = pickDailyMessage(
     isMorning ? MORNING_MESSAGES : NIGHT_MESSAGES,
     cairoNow
