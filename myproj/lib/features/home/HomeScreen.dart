@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import '../chat/ChatScreen.dart';
+import '../screens/journal_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,15 +16,15 @@ class _HomeScreenState extends State<HomeScreen> {
       TextEditingController();
 
   final List<String> _moods = ['😔', '😟', '😐', '🙂', '😄'];
-  final List<Map<String, String>> _recentReflections = [];
+  final List<JournalEntry> _journalEntries = [];
 
   String? _selectedMood;
   int _selectedRating = 0;
   int _currentNavIndex = 0;
+  bool _isLoadingJournal = true;
 
   // ── Colors ──
   static const Color _purple = Color(0xFF7B5EA7);
-  static const Color _pink = Color(0xFFD45DA1);
   static const Color _dark = Color(0xFF1A1A2E);
   static const Color _bg = Color(0xFFF4F1F8);
   static const Color _cardBg = Color(0xFFECE9F2);
@@ -30,9 +32,27 @@ class _HomeScreenState extends State<HomeScreen> {
   static const Color _textMuted = Color(0xFF888888);
 
   @override
+  void initState() {
+    super.initState();
+    _loadJournalEntries();
+  }
+
+  @override
   void dispose() {
     _dayReflectionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadJournalEntries() async {
+    final entries = await JournalDataSource.loadEntries();
+    if (!mounted) return;
+
+    setState(() {
+      _journalEntries
+        ..clear()
+        ..addAll(entries);
+      _isLoadingJournal = false;
+    });
   }
 
   String _greetingByTime() {
@@ -54,33 +74,44 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          children: [
-            _buildHeader(name),
-            const SizedBox(height: 20),
-            _buildGreeting(name),
-            const SizedBox(height: 6),
-            const Text(
-              'Take a breath. How are you feeling right now?',
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0xFF50505A),
-                fontWeight: FontWeight.w400,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildMoodCard(),
-            const SizedBox(height: 16),
-            _buildDayCard(),
-            const SizedBox(height: 24),
-            _buildRecentReflectionsSection(),
-            const SizedBox(height: 16),
-          ],
-        ),
+        child: _buildScreenBody(name),
       ),
       bottomNavigationBar: _buildBottomNavigation(),
+    );
+  }
+
+  Widget _buildScreenBody(String name) {
+    if (_currentNavIndex == 1) {
+      return JournalScreen(
+        name: name,
+        header: _buildHeader,
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      children: [
+        _buildHeader(name),
+        const SizedBox(height: 20),
+        _buildGreeting(name),
+        const SizedBox(height: 6),
+        const Text(
+          'Take a breath. How are you feeling right now?',
+          style: TextStyle(
+            fontSize: 15,
+            color: Color(0xFF50505A),
+            fontWeight: FontWeight.w400,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildMoodCard(),
+        const SizedBox(height: 16),
+        _buildDayCard(),
+        const SizedBox(height: 24),
+        _buildRecentReflectionsSection(),
+        const SizedBox(height: 16),
+      ],
     );
   }
 
@@ -166,9 +197,9 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text(
                 'Current Mood',
                 style: TextStyle(
@@ -257,8 +288,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               InkWell(
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const ChatScreen(
@@ -266,6 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   );
+                  _loadJournalEntries();
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: const Padding(
@@ -366,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(30),
-          onTap: () {
+          onTap: () async {
             final String initialMessage = _dayReflectionController.text.trim();
             if (initialMessage.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -378,7 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return;
             }
 
-            Navigator.push(
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => ChatScreen(
@@ -388,6 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             );
+            _loadJournalEntries();
           },
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
@@ -417,13 +450,15 @@ class _HomeScreenState extends State<HomeScreen> {
   // RECENT REFLECTIONS
   // ─────────────────────────────────────────────────────────────
   Widget _buildRecentReflectionsSection() {
+    final recent = _journalEntries.take(2).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
-            Text(
+          children: [
+            const Text(
               'Recent Reflections',
               style: TextStyle(
                 fontSize: 18,
@@ -431,19 +466,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: _textPrimary,
               ),
             ),
-            Text(
-              'VIEW JOURNAL',
-              style: TextStyle(
-                fontSize: 11,
-                letterSpacing: 1.2,
-                fontWeight: FontWeight.w700,
-                color: _purple,
+            GestureDetector(
+              onTap: () => setState(() => _currentNavIndex = 1),
+              child: const Text(
+                'VIEW JOURNAL',
+                style: TextStyle(
+                  fontSize: 11,
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w700,
+                  color: _purple,
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        if (_recentReflections.isEmpty)
+        if (_isLoadingJournal)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: CircularProgressIndicator(color: _purple),
+            ),
+          )
+        else if (recent.isEmpty)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
@@ -474,12 +519,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           )
         else
-          ..._recentReflections.map(_buildRecentReflectionCard),
+          ...recent.map(_buildRecentReflectionCard),
       ],
     );
   }
 
-  Widget _buildRecentReflectionCard(Map<String, String> reflection) {
+  Widget _buildRecentReflectionCard(JournalEntry reflection) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
@@ -492,9 +537,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(reflection['mood']!, style: const TextStyle(fontSize: 26)),
+              Text(reflection.emoji, style: const TextStyle(fontSize: 26)),
               Text(
-                reflection['date']!,
+                JournalDataSource.entryTimeLabel(reflection.dateTime),
                 style: const TextStyle(
                   fontSize: 11,
                   letterSpacing: 1.5,
@@ -510,7 +555,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Expanded(
                 child: Text(
-                  reflection['text']!,
+                  reflection.content,
                   style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF4D4E58),
