@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../chat/ChatScreen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/weekly_reflections_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -617,6 +618,18 @@ class _HomeScreenState extends State<HomeScreen> {
           final bool active = index == _currentNavIndex;
           return GestureDetector(
             onTap: () async {
+              if (index == 2) {
+                setState(() => _currentNavIndex = index);
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const WeeklyReflectionsScreen(),
+                  ),
+                );
+                if (!mounted) return;
+                setState(() => _currentNavIndex = 0);
+                return;
+              }
               if (index == 3) {
                 setState(() => _currentNavIndex = index);
                 await Navigator.push(
