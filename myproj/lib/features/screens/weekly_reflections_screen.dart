@@ -189,6 +189,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
             Text(
               'Safe Space',
               style: TextStyle(
+                fontSize: 15,
                 fontWeight: FontWeight.w800,
                 color: isDark ? const Color(0xFFE5DFF0) : _purple,
               ),
@@ -206,7 +207,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
                   Text(
                     'Weekly Reflections',
                     style: TextStyle(
-                      fontSize: 34,
+                      fontSize: 26,
                       fontWeight: FontWeight.w800,
                       color: isDark ? const Color(0xFFF3F0FA) : _textPrimary,
                     ),
@@ -215,7 +216,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
                   Text(
                     'Insightful growth from the last 7 days.',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 13,
                       color: isDark ? const Color(0xFFA7A3B4) : _textMuted,
                     ),
                   ),
@@ -255,7 +256,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
             style: TextStyle(
               color: Color(0xFFEFE7FA),
               letterSpacing: 1.4,
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -264,7 +265,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
             "You've checked in ${_insights.streakDays} days in a row 🔥",
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 27,
+              fontSize: 20,
               fontWeight: FontWeight.w800,
               height: 1.2,
             ),
@@ -282,7 +283,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
-                fontSize: 13,
+                fontSize: 11,
               ),
             ),
           ),
@@ -310,7 +311,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
             hasData ? _insights.weeklyAverageLabel : '–',
             style: TextStyle(
               color: isDark ? const Color(0xFFF3F0FA) : _textPrimary,
-              fontSize: 50,
+              fontSize: 38,
               fontWeight: FontWeight.w800,
               height: 1,
             ),
@@ -321,7 +322,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
                 ? 'AVERAGE WEEKLY RATING: ${_insights.weeklyAverageLabel} / 5'
                 : 'NO RATINGS YET THIS WEEK',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 11,
               letterSpacing: 1.2,
               fontWeight: FontWeight.w700,
               color: isDark
@@ -353,7 +354,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
                     Text(
                       'Mood Trends',
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: isDark
                             ? const Color(0xFFF3F0FA)
@@ -364,7 +365,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
                     Text(
                       'Fluctuations this week',
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 12,
                         color: isDark
                             ? const Color(0xFF9E9AAC)
                             : const Color(0xFF666672),
@@ -415,7 +416,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
                     d,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 12,
+                      fontSize: 10,
                       letterSpacing: 0.5,
                       color: isDark
                           ? const Color(0xFFA09CAE)
@@ -452,7 +453,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 31,
+                    fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: isDark ? const Color(0xFFF3F0FA) : _textPrimary,
                   ),
@@ -505,7 +506,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
                   '"',
                   style: TextStyle(
                     color: Color(0xFFCF97C0),
-                    fontSize: 44,
+                    fontSize: 34,
                     fontWeight: FontWeight.w700,
                     height: 0.8,
                   ),
@@ -514,7 +515,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
                 Text(
                   _insights.weeklyAdvice,
                   style: TextStyle(
-                    fontSize: 27,
+                    fontSize: 19,
                     fontWeight: FontWeight.w700,
                     height: 1.35,
                     color: isDark ? const Color(0xFFF0EDF8) : _textPrimary,
@@ -529,7 +530,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
                         ? const Color(0xFFB4AFBF)
                         : const Color(0xFF72717B),
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
+                    letterSpacing: 0.8,
                   ),
                 ),
               ],
@@ -654,7 +655,7 @@ class _EmotionChip extends StatelessWidget {
         style: const TextStyle(
           color: Color(0xFF2B2A31),
           fontWeight: FontWeight.w700,
-          fontSize: 15,
+          fontSize: 12,
         ),
       ),
     );
@@ -876,19 +877,23 @@ class _WeeklyInsights {
     int ratedDays,
   ) {
     if (checkInDays == 0) {
-      return 'You did not log enough check-ins this week yet. Try one short reflection today to unlock your weekly trend.';
+      return 'You did not log enough check-ins this week yet. Try one short reflection today.';
+    }
+
+    if (ratedDays == 0) {
+      return 'You checked in this week. Add a rating after each reflection for a clearer trend.';
     }
 
     if (avg >= 4.2) {
-      return 'You are showing a strong pattern of emotional stability this week. Keep nourishing the habits that helped you stay grounded.';
+      return 'You showed strong emotional stability this week. Keep the habits that helped you stay grounded.';
     }
     if (avg >= 3.2) {
-      return 'Your week had ups and downs, but your consistency is helping. A small nightly check-in can make next week feel steadier.';
+      return 'Your week had ups and downs, but your consistency is helping. A small nightly check-in can help.';
     }
     if (streak >= 3) {
-      return 'This week looked heavy, but your daily consistency is a real strength. Be gentle with yourself and prioritize rest in small steps.';
+      return 'This week looked heavy, but your consistency is a real strength. Be gentle with yourself.';
     }
-    return 'Your average suggests this week was emotionally demanding. Try one calming routine daily and ask for support when needed.';
+    return 'Your average suggests this week was demanding. Try one calming routine daily and ask for support.';
   }
 
   static String? _moodToLabel(String mood) {
