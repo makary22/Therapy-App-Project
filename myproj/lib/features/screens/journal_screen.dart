@@ -92,8 +92,18 @@ class JournalDataSource {
 
   static String monthLabel(DateTime date) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[date.month - 1]} ${date.year}';
   }
@@ -112,8 +122,18 @@ class JournalDataSource {
 
     if (diff == 0) return 'TODAY • $time';
     const monthShort = [
-      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
     ];
     return '${monthShort[dateTime.month - 1]} ${dateTime.day} • $time';
   }
@@ -265,15 +285,12 @@ class _JournalScreenState extends State<JournalScreen> {
           entry.dateTime.month == _visibleMonth.month;
     }).toList();
 
-    // Show all entries when nothing matches the selected day
-    final entriesToShow = entriesForSelectedDay.isNotEmpty
-        ? entriesForSelectedDay
-        : _journalEntries;
+    final entriesToShow = entriesForSelectedDay;
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       children: [
-        widget.header(widget.name),
+        const SizedBox.shrink(),
         const SizedBox(height: 22),
         const Text(
           'Your Journey',
@@ -312,11 +329,7 @@ class _JournalScreenState extends State<JournalScreen> {
             ),
           )
         else if (entriesForSelectedDay.isEmpty)
-          ...[
-            _buildEmptyEntriesCard(),
-            const SizedBox(height: 16),
-            ...entriesToShow.map(_buildJournalEntryCard),
-          ]
+          _buildEmptyEntriesCard()
         else
           ...entriesToShow.map(_buildJournalEntryCard),
         const SizedBox(height: 20),
@@ -324,9 +337,6 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // CALENDAR
-  // ─────────────────────────────────────────────────────────────
   Widget _buildCalendarCard(List<JournalEntry> monthEntries) {
     final firstDayOfMonth =
         DateTime(_visibleMonth.year, _visibleMonth.month, 1);
@@ -375,13 +385,41 @@ class _JournalScreenState extends State<JournalScreen> {
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Text('MON', style: TextStyle(fontSize: 12, color: _textMuted, fontWeight: FontWeight.w700)),
-              Text('TUE', style: TextStyle(fontSize: 12, color: _textMuted, fontWeight: FontWeight.w700)),
-              Text('WED', style: TextStyle(fontSize: 12, color: _textMuted, fontWeight: FontWeight.w700)),
-              Text('THU', style: TextStyle(fontSize: 12, color: _textMuted, fontWeight: FontWeight.w700)),
-              Text('FRI', style: TextStyle(fontSize: 12, color: _textMuted, fontWeight: FontWeight.w700)),
-              Text('SAT', style: TextStyle(fontSize: 12, color: _textMuted, fontWeight: FontWeight.w700)),
-              Text('SUN', style: TextStyle(fontSize: 12, color: _textMuted, fontWeight: FontWeight.w700)),
+              Text('MON',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _textMuted,
+                      fontWeight: FontWeight.w700)),
+              Text('TUE',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _textMuted,
+                      fontWeight: FontWeight.w700)),
+              Text('WED',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _textMuted,
+                      fontWeight: FontWeight.w700)),
+              Text('THU',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _textMuted,
+                      fontWeight: FontWeight.w700)),
+              Text('FRI',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _textMuted,
+                      fontWeight: FontWeight.w700)),
+              Text('SAT',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _textMuted,
+                      fontWeight: FontWeight.w700)),
+              Text('SUN',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _textMuted,
+                      fontWeight: FontWeight.w700)),
             ],
           ),
           const SizedBox(height: 10),
@@ -400,7 +438,6 @@ class _JournalScreenState extends State<JournalScreen> {
               if (dayNumber < 1 || dayNumber > daysInMonth) {
                 return const SizedBox.shrink();
               }
-
               final date =
                   DateTime(_visibleMonth.year, _visibleMonth.month, dayNumber);
               final hasEntry = daysWithEntries.contains(date);
@@ -412,9 +449,8 @@ class _JournalScreenState extends State<JournalScreen> {
                 onTap: () => setState(() => _selectedDate = date),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: selected
-                        ? const Color(0xFFDCD4EB)
-                        : Colors.transparent,
+                    color:
+                        selected ? const Color(0xFFDCD4EB) : Colors.transparent,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -464,9 +500,6 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // EMPTY STATE
-  // ─────────────────────────────────────────────────────────────
   Widget _buildEmptyEntriesCard() {
     return Container(
       width: double.infinity,
@@ -492,302 +525,108 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // ENTRY CARD
-  // ─────────────────────────────────────────────────────────────
   Widget _buildJournalEntryCard(JournalEntry entry) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Material(
         color: const Color(0xFFF1EFF5),
         borderRadius: BorderRadius.circular(24),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(24),
-          onTap: () => _openEntryDetails(entry),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: entry.accent.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Center(
-                        child: Text(entry.emoji,
-                            style: const TextStyle(fontSize: 24)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            JournalDataSource.entryTimeLabel(entry.dateTime),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              letterSpacing: 1,
-                              color: Color(0xFF73707C),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            entry.title,
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
-                              color: entry.accent,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Row(
-                      children: List.generate(5, (index) {
-                        return Icon(
-                          index < entry.rating
-                              ? Icons.star_rounded
-                              : Icons.star_outline_rounded,
-                          size: 16,
-                          color: const Color(0xFFD45DA1),
-                        );
-                      }),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '"${entry.content}"',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF4D4E58),
-                    height: 1.5,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      children: entry.tags
-                          .map(
-                            (tag) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE3DFEA),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                tag.toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: entry.accent,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    const Spacer(),
-                    Text(
-                      'Tap to expand',
-                      style: TextStyle(
-                        color: entry.accent,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(Icons.arrow_forward, size: 16, color: entry.accent),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // BOTTOM SHEET — ENTRY DETAILS
-  // ─────────────────────────────────────────────────────────────
-  void _openEntryDetails(JournalEntry entry) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _EntryDetailSheet(entry: entry),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// ENTRY DETAIL SHEET WIDGET
-// ─────────────────────────────────────────────────────────────
-class _EntryDetailSheet extends StatelessWidget {
-  const _EntryDetailSheet({required this.entry});
-
-  final JournalEntry entry;
-
-  static const Color _pink = Color(0xFFD45DA1);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFF4F1F8),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: SafeArea(
-        top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 5,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD8D3E2),
-                      borderRadius: BorderRadius.circular(99),
+                      color: entry.accent.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Center(
+                      child: Text(entry.emoji,
+                          style: const TextStyle(fontSize: 24)),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-
-                // Header row
-                Row(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: entry.accent.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Center(
-                        child: Text(entry.emoji,
-                            style: const TextStyle(fontSize: 28)),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            JournalDataSource.entryTimeLabel(entry.dateTime),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              letterSpacing: 1,
-                              color: Color(0xFF73707C),
-                              fontWeight: FontWeight.w700,
-                            ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          JournalDataSource.entryTimeLabel(entry.dateTime),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            letterSpacing: 1,
+                            color: Color(0xFF73707C),
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            entry.title,
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: entry.accent,
-                              height: 1.2,
-                            ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          entry.title,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: entry.accent,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-
-                // Stars
-                Row(
-                  children: List.generate(5, (index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 2),
-                      child: Icon(
+                  ),
+                  Row(
+                    children: List.generate(5, (index) {
+                      return Icon(
                         index < entry.rating
                             ? Icons.star_rounded
                             : Icons.star_outline_rounded,
-                        size: 22,
-                        color: _pink,
-                      ),
-                    );
-                  }),
-                ),
-                const SizedBox(height: 18),
-
-                // Divider
-                Container(
-                  height: 1,
-                  color: const Color(0xFFE2DDE9),
-                ),
-                const SizedBox(height: 18),
-
-                // Full content
-                Text(
-                  entry.content,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFF3E3F49),
-                    height: 1.7,
+                        size: 16,
+                        color: const Color(0xFFD45DA1),
+                      );
+                    }),
                   ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '"${entry.content}"',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF4D4E58),
+                  height: 1.5,
+                  fontStyle: FontStyle.italic,
                 ),
-                const SizedBox(height: 22),
-
-                // Tags
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: entry.tags
-                      .map(
-                        (tag) => Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: entry.accent.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: entry.accent.withOpacity(0.25),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            tag.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: entry.accent,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
-                            ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                children: entry.tags
+                    .map(
+                      (tag) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE3DFEA),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          tag.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: entry.accent,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
                           ),
                         ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
           ),
         ),
       ),

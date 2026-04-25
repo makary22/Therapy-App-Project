@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../chat/ChatScreen.dart';
 import '../screens/journal_screen.dart';
+import '../screens/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,7 +35,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadJournalEntries();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadJournalEntries();
+    });
   }
 
   @override
@@ -297,6 +301,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   );
+                  if (!mounted) return;
+                  setState(() => _currentNavIndex = 1);
                   _loadJournalEntries();
                 },
                 borderRadius: BorderRadius.circular(20),
@@ -420,6 +426,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             );
+            if (!mounted) return;
+            setState(() => _currentNavIndex = 1);
             _loadJournalEntries();
           },
           child: const Padding(
@@ -606,7 +614,16 @@ class _HomeScreenState extends State<HomeScreen> {
           final bool active = index == _currentNavIndex;
 
           return GestureDetector(
-            onTap: () => setState(() => _currentNavIndex = index),
+            onTap: () {
+              if (index == 3) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+                return;
+              }
+
+              setState(() => _currentNavIndex = index);
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: active

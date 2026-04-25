@@ -8,11 +8,13 @@ import 'features/notifications/push_notification_service.dart';
 import 'features/screens/login.dart' show LoginScreen;
 import 'features/screens/onboarding_screen.dart' show OnboardingScreen;
 import 'features/screens/verify_email_screen.dart' show VerifyEmailScreen;
+import 'features/theme/app_theme_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await PushNotificationService.initialize();
+  await AppThemeController.initialize();
 
   final prefs = await SharedPreferences.getInstance();
 
@@ -52,15 +54,28 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Safe Space',
-
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-
-      home: startScreen,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: AppThemeController.themeMode,
+      builder: (context, mode, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Safe Space',
+          themeMode: mode,
+          theme: ThemeData(
+            brightness: Brightness.light,
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          ),
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            scaffoldBackgroundColor: const Color(0xFF11121A),
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF7B5EA7),
+              brightness: Brightness.dark,
+            ),
+          ),
+          home: startScreen,
+        );
+      },
     );
   }
 }
