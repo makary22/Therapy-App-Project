@@ -7,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/auth_service.dart';
-import '../home/HomeScreen.dart';
 import '../theme/app_theme_controller.dart';
 import 'login.dart';
 
@@ -422,14 +421,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _onNavTap(int index) {
     if (index == _currentNavIndex) return;
-    setState(() => _currentNavIndex = index);
     if (index == 0) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-        (route) => false,
-      );
+      Navigator.of(context).pop();
       return;
     }
+
+    setState(() => _currentNavIndex = index);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('This section is coming soon.'),

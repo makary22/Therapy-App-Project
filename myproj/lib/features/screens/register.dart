@@ -173,9 +173,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isCompact = constraints.maxHeight < 780;
-            final topImageHeight = isCompact
-                ? (constraints.maxHeight * 0.24).clamp(145.0, 190.0)
-                : 235.0;
             final sectionSpacing = isCompact ? 18.0 : 24.0;
             final formHorizontalPadding = isCompact ? 18.0 : 24.0;
             final formVerticalPadding = isCompact ? 14.0 : 20.0;

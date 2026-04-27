@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'ai_service.dart';
 import '../tip_screens/box_breathing_screen.dart';
+import '../tip_screens/energy_battery_screen.dart';
 import '../tip_screens/grounding_walk_screen.dart';
 import '../tip_screens/unload_shore_screen.dart';
 
@@ -278,6 +279,12 @@ class AdviceSummaryScreen extends StatelessWidget {
           'icon': Icons.park_outlined,
           'title': 'Grounding Walk',
           'subtitle': 'Focus on the feeling of your feet touching the earth.',
+        },
+        {
+          'id': 'energy_battery',
+          'icon': Icons.battery_charging_full_rounded,
+          'title': 'Energy Battery',
+          'subtitle': 'Check your energy level and pick a gentle reset action.',
         },
       ];
 
@@ -748,6 +755,9 @@ class AdviceSummaryScreen extends StatelessWidget {
         break;
       case 'unload_shore':
         screen = const UnloadShoreScreen();
+        break;
+      case 'energy_battery':
+        screen = const EnergyBatteryScreen();
         break;
       case 'grounding_walk':
       default:
