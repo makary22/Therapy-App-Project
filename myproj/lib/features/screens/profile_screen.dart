@@ -7,7 +7,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/auth_service.dart';
+import '../home/HomeScreen.dart';
+import 'journal_screen.dart';
 import '../theme/app_theme_controller.dart';
+import 'weekly_reflections_screen.dart';
 import 'login.dart';
 
 const Color _purple = Color(0xFF7B5EA7);
@@ -421,19 +424,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _onNavTap(int index) {
     if (index == _currentNavIndex) return;
+
+    setState(() => _currentNavIndex = index);
+
     if (index == 0) {
-      Navigator.of(context).pop();
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
       return;
     }
 
-    setState(() => _currentNavIndex = index);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('This section is coming soon.'),
-        backgroundColor: _purple,
-      ),
-    );
-    setState(() => _currentNavIndex = 3);
+    if (index == 1) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => JournalScreen(
+            name: _fullName.split(' ').first,
+            header: _buildJournalHeader,
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (index == 2) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const WeeklyReflectionsScreen()),
+      );
+      return;
+    }
   }
 
   @override
@@ -531,6 +549,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildJournalHeader(String name) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? const Color(0xFFE5DFF0) : _purple;
+    final avatarBorder =
+        isDark ? const Color(0xFF383A4A) : const Color(0xFFD4D2DD);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.eco_outlined, size: 22, color: titleColor),
+            const SizedBox(width: 6),
+            Text(
+              'Safe Space',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: titleColor,
+              ),
+            ),
+          ],
+        ),
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: avatarBorder, width: 2),
+          ),
+          child: CircleAvatar(
+            backgroundColor: isDark ? const Color(0xFF2D2F3D) : _dark,
+            child: Text(
+              name.isNotEmpty ? name[0].toUpperCase() : 'U',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
           ),
         ),
       ],

@@ -81,6 +81,7 @@ class _ChatScreenState extends State<ChatScreen> {
           'rating': widget.initialRating,
         },
       ],
+      'favorite': false,
     });
     _activeSessionIndex = _sessions.length - 1;
     _saveSessions();
@@ -246,6 +247,7 @@ class _ChatScreenState extends State<ChatScreen> {
         loaded.add({
           'date': session['date'] ?? '',
           'messages': messages,
+          'favorite': session['favorite'] ?? false,
         });
       }
 
@@ -277,10 +279,29 @@ class _ChatScreenState extends State<ChatScreen> {
       return {
         'date': session['date'],
         'messages': messages,
+        'favorite': session['favorite'] ?? false,
       };
     }).toList();
 
     await prefs.setString(_historyStorageKey, jsonEncode(serialized));
+  }
+
+  bool get _currentSessionIsFavorite {
+    if (_sessions.isEmpty ||
+        _activeSessionIndex < 0 ||
+        _activeSessionIndex >= _sessions.length) return false;
+    return (_sessions[_activeSessionIndex]['favorite'] ?? false) as bool;
+  }
+
+  void _toggleFavorite() {
+    if (_sessions.isEmpty ||
+        _activeSessionIndex < 0 ||
+        _activeSessionIndex >= _sessions.length) return;
+    setState(() {
+      final cur = _sessions[_activeSessionIndex];
+      cur['favorite'] = !(cur['favorite'] ?? false) as bool;
+    });
+    _saveSessions();
   }
 
   void _scrollToBottom() {
@@ -469,7 +490,7 @@ class _ChatScreenState extends State<ChatScreen> {
         GestureDetector(
           onTap: _showHistorySheet,
           child: Container(
-            margin: const EdgeInsets.only(right: 12, top: 10, bottom: 10),
+            margin: const EdgeInsets.only(right: 8, top: 10, bottom: 10),
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF2A2B38) : _cardBg,
@@ -488,6 +509,26 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+        // Favorite toggle
+        Padding(
+          padding: const EdgeInsets.only(right: 12, top: 6, bottom: 6),
+          child: GestureDetector(
+            onTap: _toggleFavorite,
+            child: Container(
+              width: 42,
+              height: 36,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2A2B38) : _cardBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                _currentSessionIsFavorite ? Icons.star : Icons.star_border,
+                color: _purple,
+                size: 18,
+              ),
             ),
           ),
         ),

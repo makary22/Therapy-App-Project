@@ -3,6 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../home/HomeScreen.dart';
+import 'profile_screen.dart';
+import 'weekly_reflections_screen.dart';
+
 class JournalEntry {
   const JournalEntry({
     required this.title,
@@ -84,6 +88,66 @@ class JournalDataSource {
 
     if (entries.isEmpty) {
       entries.addAll(_sampleEntries());
+    }
+
+    entries.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    return entries;
+  }
+
+  static Future<List<JournalEntry>> loadFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? raw = prefs.getString(_storageKey);
+
+    final List<JournalEntry> entries = [];
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          for (final session in decoded) {
+            if (session is! Map<String, dynamic>) continue;
+            if (session['favorite'] != true) continue;
+            final messages = session['messages'];
+            if (messages is! List) continue;
+
+            Map<String, dynamic>? firstUserMessage;
+            for (final msg in messages) {
+              if (msg is! Map<String, dynamic>) continue;
+              if (msg['isUser'] == true &&
+                  (msg['text'] as String? ?? '').trim().isNotEmpty) {
+                firstUserMessage = msg;
+                break;
+              }
+            }
+
+            if (firstUserMessage == null) continue;
+
+            final String text = (firstUserMessage['text'] as String? ?? '').trim();
+            if (text.isEmpty) continue;
+
+            DateTime date = DateTime.now();
+            final ts = firstUserMessage['timestamp'];
+            if (ts is String) {
+              date = DateTime.tryParse(ts) ?? date;
+            }
+
+            final int rating = (firstUserMessage['rating'] as num?)?.toInt() ??
+                _inferRatingFromText(text);
+            final String mood = (firstUserMessage['mood'] as String?) ?? '';
+
+            entries.add(
+              JournalEntry(
+                title: _deriveTitle(text),
+                content: text,
+                dateTime: date,
+                rating: rating.clamp(1, 5),
+                emoji: _emojiForMood(mood, rating),
+                tags: _deriveTags(text),
+                accent: _accentColor(rating),
+              ),
+            );
+          }
+        }
+      } catch (_) {}
     }
 
     entries.sort((a, b) => b.dateTime.compareTo(a.dateTime));
@@ -247,6 +311,8 @@ class _JournalScreenState extends State<JournalScreen> {
   static const Color _textMuted = Color(0xFF888888);
 
   final List<JournalEntry> _journalEntries = [];
+  final List<JournalEntry> _favoriteEntries = [];
+  int _currentNavIndex = 1;
   DateTime _visibleMonth = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime _selectedDate = DateTime(
     DateTime.now().year,
@@ -263,77 +329,102 @@ class _JournalScreenState extends State<JournalScreen> {
 
   Future<void> _loadEntries() async {
     final entries = await JournalDataSource.loadEntries();
+    final favs = await JournalDataSource.loadFavorites();
     if (!mounted) return;
     setState(() {
       _journalEntries
         ..clear()
         ..addAll(entries);
+      _favoriteEntries
+        ..clear()
+        ..addAll(favs);
       _isLoadingJournal = false;
     });
   }
 
+  void _handleNavTap(int index) {
+    if (index == _currentNavIndex) return;
+
+    setState(() => _currentNavIndex = index);
+
+    if (index == 0) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+      return;
+    }
+
+    if (index == 2) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const WeeklyReflectionsScreen()),
+      );
+      return;
+    }
+
+    if (index == 3) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      );
+      return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final entriesForSelectedDay = _journalEntries.where((entry) {
-      return entry.dateTime.year == _selectedDate.year &&
-          entry.dateTime.month == _selectedDate.month &&
-          entry.dateTime.day == _selectedDate.day;
-    }).toList();
-
     final entriesForVisibleMonth = _journalEntries.where((entry) {
       return entry.dateTime.year == _visibleMonth.year &&
           entry.dateTime.month == _visibleMonth.month;
     }).toList();
 
-    final entriesToShow = entriesForSelectedDay;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      children: [
-        const SizedBox.shrink(),
-        const SizedBox(height: 22),
-        const Text(
-          'Your Journey',
-          style: TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.w700,
-            color: _purple,
-            height: 1.1,
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF12131C) : const Color(0xFFF4F1F8),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(72),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+            child: widget.header(widget.name),
           ),
         ),
-        Text(
-          'Reflecting on ${JournalDataSource.monthLabel(_visibleMonth)}',
-          style: const TextStyle(
-            fontSize: 15,
-            color: Color(0xFF50505A),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 14),
-        _buildCalendarCard(entriesForVisibleMonth),
-        const SizedBox(height: 24),
-        const Text(
-          'Past Entries',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: _textPrimary,
-          ),
-        ),
-        const SizedBox(height: 14),
-        if (_isLoadingJournal)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
+      ),
+      body: _isLoadingJournal
+          ? const Center(
               child: CircularProgressIndicator(color: _purple),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Your Journey',
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w700,
+                      color: _purple,
+                      height: 1.1,
+                    ),
+                  ),
+                  Text(
+                    'Reflecting on ${JournalDataSource.monthLabel(_visibleMonth)}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF50505A),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildCalendarCard(entriesForVisibleMonth),
+                  const SizedBox(height: 14),
+                  _buildFavoritesSection(),
+                ],
+              ),
             ),
-          )
-        else if (entriesForSelectedDay.isEmpty)
-          _buildEmptyEntriesCard()
-        else
-          ...entriesToShow.map(_buildJournalEntryCard),
-        const SizedBox(height: 20),
-      ],
+      bottomNavigationBar: _buildBottomNavigation(isDark),
     );
   }
 
@@ -480,6 +571,125 @@ class _JournalScreenState extends State<JournalScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFavoritesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Favorite Chats',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (_favoriteEntries.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F3F8),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'No favorite chats yet.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF696570),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          )
+        else
+          Column(
+            children: _favoriteEntries
+                .map((e) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildJournalEntryCard(e),
+                    ))
+                .toList(),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBottomNavigation(bool isDark) {
+    final List<Map<String, dynamic>> items = [
+      {'icon': Icons.home_rounded, 'label': 'HOME'},
+      {'icon': Icons.menu_book_outlined, 'label': 'JOURNAL'},
+      {'icon': Icons.insights_outlined, 'label': 'INSIGHTS'},
+      {'icon': Icons.person_outline_rounded, 'label': 'PROFILE'},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFF0EEF5),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 10,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: List.generate(items.length, (index) {
+          final item = items[index];
+          final bool active = index == _currentNavIndex;
+
+          return GestureDetector(
+            onTap: () => _handleNavTap(index),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: active
+                  ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8)
+                  : const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: active
+                    ? const LinearGradient(
+                        colors: [Color(0xFF764AA1), Color(0xFFD96CB3)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    item['icon'] as IconData,
+                    color: active
+                        ? Colors.white
+                        : (isDark
+                            ? const Color(0xFF9C9AAF)
+                            : const Color(0xFF8A9AB3)),
+                    size: 20,
+                  ),
+                  if (active) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      item['label'] as String,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        }),
       ),
     );
   }

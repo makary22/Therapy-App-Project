@@ -1,7 +1,12 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../home/HomeScreen.dart';
+import 'journal_screen.dart';
+import 'profile_screen.dart';
 
 class WeeklyReflectionsScreen extends StatefulWidget {
   const WeeklyReflectionsScreen({super.key});
@@ -24,6 +29,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
 
   bool _loading = true;
   late _WeeklyInsights _insights;
+  int _currentNavIndex = 2;
 
   @override
   void initState() {
@@ -171,30 +177,156 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
     return 0;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+  String _displayName() {
+    final user = FirebaseAuth.instance.currentUser;
+    final displayName = (user?.displayName ?? '').trim();
+    final email = (user?.email ?? '').trim();
 
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
-      appBar: AppBar(
-        backgroundColor: isDark ? const Color(0xFF12131C) : _surface,
-        elevation: 0,
-        titleSpacing: 16,
-        title: Row(
+    if (displayName.isNotEmpty) {
+      return displayName.split(' ').first;
+    }
+
+    if (email.isNotEmpty) {
+      return email.split('@').first;
+    }
+
+    return 'Friend';
+  }
+
+  Widget _buildJournalHeader(String name) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
           children: [
-            Icon(Icons.eco_outlined,
-                color: isDark ? const Color(0xFFE5DFF0) : _purple),
-            const SizedBox(width: 8),
+            Icon(
+              Icons.eco_outlined,
+              size: 22,
+              color: isDark ? const Color(0xFFE5DFF0) : _purple,
+            ),
+            const SizedBox(width: 6),
             Text(
               'Safe Space',
               style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
                 color: isDark ? const Color(0xFFE5DFF0) : _purple,
               ),
             ),
           ],
+        ),
+        CircleAvatar(
+          backgroundColor: isDark ? const Color(0xFF2D2F3D) : _purple,
+          child: Text(
+            name.isNotEmpty ? name[0].toUpperCase() : 'U',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _handleNavTap(int index) {
+    if (index == _currentNavIndex) return;
+
+    setState(() => _currentNavIndex = index);
+
+    if (index == 0) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+      return;
+    }
+
+    if (index == 1) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => JournalScreen(
+            name: _displayName(),
+            header: _buildJournalHeader,
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (index == 3) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      );
+      return;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final String name = _displayName();
+
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(72),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.eco_outlined,
+                      size: 22,
+                      color: isDark ? const Color(0xFFE5DFF0) : _purple,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Safe Space',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? const Color(0xFFE5DFF0) : _purple,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF383A4A)
+                          : const Color(0xFFD4D2DD),
+                      width: 2,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    backgroundColor:
+                        isDark ? const Color(0xFF2D2F3D) : _purple,
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
       body: _loading
@@ -233,6 +365,84 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
                 ],
               ),
             ),
+      bottomNavigationBar: _buildBottomNavigation(isDark),
+    );
+  }
+
+  Widget _buildBottomNavigation(bool isDark) {
+    final List<Map<String, dynamic>> items = [
+      {'icon': Icons.home_rounded, 'label': 'HOME'},
+      {'icon': Icons.menu_book_outlined, 'label': 'JOURNAL'},
+      {'icon': Icons.insights_outlined, 'label': 'INSIGHTS'},
+      {'icon': Icons.person_outline_rounded, 'label': 'PROFILE'},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFF0EEF5),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 10,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: List.generate(items.length, (index) {
+          final item = items[index];
+          final bool active = index == _currentNavIndex;
+
+          return GestureDetector(
+            onTap: () => _handleNavTap(index),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: active
+                  ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8)
+                  : const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: active
+                    ? const LinearGradient(
+                        colors: [Color(0xFF764AA1), Color(0xFFD96CB3)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    item['icon'] as IconData,
+                    color: active
+                        ? Colors.white
+                        : (isDark
+                            ? const Color(0xFF9C9AAF)
+                            : const Color(0xFF8A9AB3)),
+                    size: 20,
+                  ),
+                  if (active) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      item['label'] as String,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        }),
+      ),
     );
   }
 

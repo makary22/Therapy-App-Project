@@ -9,6 +9,7 @@ class EnergyBatteryScreen extends StatefulWidget {
 
 class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
   static const Color _purple = Color(0xFF7B5EA7);
+  static const Color _pink = Color(0xFFD45DA1);
   static const Color _bg = Color(0xFFF4F1F8);
   static const Color _cardBg = Color(0xFFFFFFFF);
   static const Color _textPrimary = Color(0xFF1E1F29);

@@ -1,9 +1,14 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../chat/ChatScreen.dart';
 import '../screens/journal_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/weekly_reflections_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,15 +21,56 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _dayReflectionController =
       TextEditingController();
 
-  final List<String> _moods = ['😔', '😟', '😐', '🙂', '😄'];
-  final List<JournalEntry> _journalEntries = [];
+  // emoji + label pairs
+  static const List<Map<String, String>> _moodOptions = [
+    {'emoji': '😔', 'label': 'V. Bad'},
+    {'emoji': '😟', 'label': 'Bad'},
+    {'emoji': '😐', 'label': 'Neutral'},
+    {'emoji': '🙂', 'label': 'Good'},
+    {'emoji': '😄', 'label': 'V. Good'},
+  ];
 
   String? _selectedMood;
   int _selectedRating = 0;
   int _currentNavIndex = 0;
-  bool _isLoadingJournal = true;
 
-  // ── Colors ──
+  // Water tracker state
+  static const int _waterGoal = 8; // cups
+  int _waterCups = 0;
+  static const String _waterLastResetKey = 'water_last_reset_ms';
+
+  Uint8List? _avatarBytes;
+  String _profileName = '';
+
+  // Daily quote — rotates by day-of-year
+  static const List<Map<String, String>> _quotes = [
+    {
+      'text': 'Don\'t spend time beating on a wall, hoping it will turn into a door.',
+      'author': 'Coco Chanel',
+    },
+    {
+      'text': 'You are enough, just as you are.',
+      'author': 'Meghan Markle',
+    },
+    {
+      'text': 'In the middle of difficulty lies opportunity.',
+      'author': 'Albert Einstein',
+    },
+    {
+      'text': 'Be gentle with yourself. You are a child of the universe.',
+      'author': 'Max Ehrmann',
+    },
+    {
+      'text': 'Rest is not idle — it is wisdom.',
+      'author': 'Safe Space',
+    },
+  ];
+
+  Map<String, String> get _todayQuote {
+    final dayIndex = DateTime.now().difference(DateTime(2024)).inDays;
+    return _quotes[dayIndex % _quotes.length];
+  }
+
   static const Color _purple = Color(0xFF7B5EA7);
   static const Color _dark = Color(0xFF1A1A2E);
   static const Color _bg = Color(0xFFF4F1F8);
@@ -35,10 +81,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _loadJournalEntries();
-    });
+    _loadProfileData();
+    _loadWaterData();
   }
 
   @override
@@ -47,16 +91,49 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _loadJournalEntries() async {
-    final entries = await JournalDataSource.loadEntries();
-    if (!mounted) return;
+  Future<void> _loadProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final avatarBase64 = prefs.getString('profile_avatar_base64');
+    final savedName = (prefs.getString('profile_name') ?? '').trim();
 
+    final user = FirebaseAuth.instance.currentUser;
+    final displayName = (user?.displayName ?? '').trim();
+    final email = (user?.email ?? '').trim();
+
+    final resolvedName = savedName.isNotEmpty
+        ? savedName
+        : (displayName.isNotEmpty
+            ? displayName.split(' ').first
+            : (email.isNotEmpty ? email.split('@').first : 'Friend'));
+
+    if (!mounted) return;
     setState(() {
-      _journalEntries
-        ..clear()
-        ..addAll(entries);
-      _isLoadingJournal = false;
+      _avatarBytes = avatarBase64 != null ? base64Decode(avatarBase64) : null;
+      _profileName = resolvedName;
     });
+  }
+
+  Future<void> _loadWaterData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    final lastResetMs = prefs.getInt(_waterLastResetKey);
+    final bool shouldReset =
+        lastResetMs == null || now.difference(DateTime.fromMillisecondsSinceEpoch(lastResetMs)).inHours >= 24;
+
+    if (shouldReset) {
+      await prefs.setInt('water_cups', 0);
+      await prefs.setInt(_waterLastResetKey, now.millisecondsSinceEpoch);
+      setState(() => _waterCups = 0);
+      return;
+    }
+
+    setState(() => _waterCups = prefs.getInt('water_cups') ?? 0);
+  }
+
+  Future<void> _saveWaterData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_waterLastResetKey, DateTime.now().millisecondsSinceEpoch);
+    await prefs.setInt('water_cups', _waterCups);
   }
 
   String _greetingByTime() {
@@ -68,157 +145,113 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final User? user = FirebaseAuth.instance.currentUser;
-    final String displayName = (user?.displayName ?? '').trim();
-    final String email = (user?.email ?? '').trim();
-    final String name = displayName.isNotEmpty
-        ? displayName.split(' ').first
-        : (email.isNotEmpty ? email.split('@').first : 'Friend');
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final String name = _profileName.isNotEmpty ? _profileName : 'Friend';
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
       body: SafeArea(
-        child: _buildScreenBody(name),
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          children: [
+            _buildHeader(name),
+            const SizedBox(height: 20),
+            _buildGreeting(name),
+            const SizedBox(height: 6),
+            const SizedBox(height: 14),
+            // ── Message of the Day ──
+            _buildMessageOfTheDay(isDark),
+            const SizedBox(height: 16),
+            // ── Mood selector with labels ──
+            _buildMoodCard(isDark),
+            const SizedBox(height: 16),
+            // ── Day reflection + rating ──
+            _buildDayCard(isDark),
+            const SizedBox(height: 16),
+            // ── Water tracker ──
+            _buildWaterTracker(isDark),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomNavigation(),
     );
   }
 
-  Widget _buildScreenBody(String name) {
-    if (_currentNavIndex == 1) {
-      return JournalScreen(
-        name: name,
-        header: _buildHeader,
-      );
-    }
-
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      children: [
-        _buildHeader(name),
-        const SizedBox(height: 20),
-        _buildGreeting(name),
-        const SizedBox(height: 6),
-        const Text(
-          'Take a breath. How are you feeling right now?',
-          style: TextStyle(
-            fontSize: 15,
-            color: Color(0xFF50505A),
-            fontWeight: FontWeight.w400,
-            height: 1.4,
-          ),
+  // ─────────────────────────────────────────────
+  // MESSAGE OF THE DAY
+  // ─────────────────────────────────────────────
+  Widget _buildMessageOfTheDay(bool isDark) {
+    final quote = _todayQuote;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF7B5EA7), Color(0xFFD45DA1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        const SizedBox(height: 20),
-        _buildMoodCard(),
-        const SizedBox(height: 16),
-        _buildDayCard(),
-        const SizedBox(height: 24),
-        _buildRecentReflectionsSection(),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // HEADER
-  // ─────────────────────────────────────────────────────────────
-  Widget _buildHeader(String name) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Row(
-          children: [
-            Icon(Icons.eco_outlined, size: 22, color: _purple),
-            SizedBox(width: 6),
-            Text(
-              'Safe Space',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: _purple,
-              ),
-            ),
-          ],
-        ),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFD4D2DD), width: 2),
-          ),
-          child: CircleAvatar(
-            backgroundColor: _dark,
-            child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : 'U',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // GREETING
-  // ─────────────────────────────────────────────────────────────
-  Widget _buildGreeting(String name) {
-    return RichText(
-      text: TextSpan(
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextSpan(
-            text: '${_greetingByTime()},\n$name ',
-            style: const TextStyle(
-              fontSize: 30,
-              height: 1.2,
+          const Text(
+            'MESSAGE OF THE DAY',
+            style: TextStyle(
+              color: Color(0xFFEDE6F8),
+              fontSize: 11,
+              letterSpacing: 1.6,
               fontWeight: FontWeight.w700,
-              color: _textPrimary,
             ),
           ),
-          const TextSpan(
-            text: '🌿',
-            style: TextStyle(fontSize: 28),
+          const SizedBox(height: 10),
+          Text(
+            '"${quote['text']}"',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '— ${quote['author']}',
+            style: const TextStyle(
+              color: Color(0xFFE4D8F8),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // MOOD CARD
-  // ─────────────────────────────────────────────────────────────
-  Widget _buildMoodCard() {
+  // ─────────────────────────────────────────────
+  // MOOD CARD  (emoji + label underneath)
+  // ─────────────────────────────────────────────
+  Widget _buildMoodCard(bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: _cardBg,
+        color: isDark ? const Color(0xFF1A1C27) : _cardBg,
         borderRadius: BorderRadius.circular(24),
       ),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Current Mood',
+                'How are you feeling today?',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: _textPrimary,
-                ),
-              ),
-              Text(
-                'SELECT ONE',
-                style: TextStyle(
-                  fontSize: 11,
-                  letterSpacing: 1.6,
-                  color: _textMuted,
-                  fontWeight: FontWeight.w600,
+                  color: isDark ? const Color(0xFFF2EEF9) : _textPrimary,
                 ),
               ),
             ],
@@ -226,54 +259,294 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(_moods.length, (index) {
-              final String mood = _moods[index];
-              final bool isSelected = _selectedMood == mood;
-
+            children: _moodOptions.map((option) {
+              final bool isSelected = _selectedMood == option['emoji'];
               return GestureDetector(
-                onTap: () => setState(() => _selectedMood = mood),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFFE3D5FB)
-                        : const Color(0xFFF5F3F8),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: _purple.withOpacity(0.18),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : null,
-                    border: isSelected
-                        ? Border.all(
-                            color: _purple.withOpacity(0.3), width: 1.5)
-                        : null,
-                  ),
-                  child: Center(
-                    child: Text(mood, style: const TextStyle(fontSize: 26)),
-                  ),
+                onTap: () => setState(() => _selectedMood = option['emoji']),
+                child: Column(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFFE3D5FB)
+                            : (isDark
+                                ? const Color(0xFF2A2B38)
+                                : const Color(0xFFF5F3F8)),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: _purple.withOpacity(0.22),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                )
+                              ]
+                            : null,
+                        border: isSelected
+                            ? Border.all(
+                                color: _purple.withOpacity(0.35), width: 1.5)
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(option['emoji']!,
+                            style: const TextStyle(fontSize: 26)),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      option['label']!,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: isSelected
+                            ? _purple
+                            : (isDark
+                                ? const Color(0xFFA8A6B5)
+                                : _textMuted),
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
                 ),
               );
-            }),
+            }).toList(),
           ),
         ],
       ),
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // DAY CARD
-  // ─────────────────────────────────────────────────────────────
-  Widget _buildDayCard() {
+  // ─────────────────────────────────────────────
+  // WATER TRACKER
+  // ─────────────────────────────────────────────
+  Widget _buildWaterTracker(bool isDark) {
+    final double liters = _waterCups * 0.25; // 250 ml per cup
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFF2F0F5),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Daily Stats',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? const Color(0xFFF2EEF9) : _textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Water sub-header
+          Row(
+            children: [
+              const Icon(Icons.water_drop_outlined,
+                  size: 16, color: Color(0xFF4A90D9)),
+              const SizedBox(width: 6),
+              Text(
+                'Water',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: isDark
+                      ? const Color(0xFFD5D2E2)
+                      : const Color(0xFF2D2E38),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${liters.toStringAsFixed(1)}L / ${(_waterGoal * 0.25).toStringAsFixed(1)}L',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: isDark
+                      ? const Color(0xFFA8A6B5)
+                      : const Color(0xFF6C6B75),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: () {
+              if (_waterCups >= _waterGoal) return;
+              setState(() => _waterCups++);
+              _saveWaterData();
+            },
+            child: Container(
+              width: 42,
+              height: 46,
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A90D9).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                    color: const Color(0xFF4A90D9).withOpacity(0.3),
+                    width: 1.5),
+              ),
+              child: const Center(
+                child:
+                    Icon(Icons.add_rounded, size: 22, color: Color(0xFF4A90D9)),
+              ),
+            ),
+          ),
+
+          if (_waterCups > 0) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(_waterCups, (index) {
+                return Container(
+                  width: 36,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD0E8F8),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF4A90D9).withOpacity(0.35),
+                      width: 1.3,
+                    ),
+                  ),
+                  child: const Center(
+                    child: Text('🥤', style: TextStyle(fontSize: 18)),
+                  ),
+                );
+              }),
+            ),
+          ],
+
+          if (_waterCups >= _waterGoal) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A90D9).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Text(
+                '🎉 Goal reached! Great job staying hydrated.',
+                style: TextStyle(
+                  color: Color(0xFF2C6FAA),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // HEADER
+  // ─────────────────────────────────────────────
+  Widget _buildHeader(String name) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final String initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.eco_outlined, size: 22,
+                color: isDark ? const Color(0xFFE5DFF0) : _purple),
+            const SizedBox(width: 6),
+            Text(
+              'Safe Space',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: isDark ? const Color(0xFFE5DFF0) : _purple,
+              ),
+            ),
+          ],
+        ),
+        GestureDetector(
+          onTap: () async {
+            await Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()));
+            if (!mounted) return;
+            await _loadProfileData();
+          },
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF383A4A)
+                    : const Color(0xFFD4D2DD),
+                width: 2,
+              ),
+            ),
+            child: ClipOval(
+              child: _avatarBytes != null
+                  ? Image.memory(_avatarBytes!,
+                      fit: BoxFit.cover, width: 44, height: 44)
+                  : CircleAvatar(
+                      backgroundColor:
+                          isDark ? const Color(0xFF2D2F3D) : _dark,
+                      child: Text(initial,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16)),
+                    ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGreeting(String name) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: '${_greetingByTime()},\n$name ',
+            style: TextStyle(
+              fontSize: 30,
+              height: 1.2,
+              fontWeight: FontWeight.w700,
+              color: isDark ? const Color(0xFFF2EEF9) : _textPrimary,
+            ),
+          ),
+          const TextSpan(text: '🌿', style: TextStyle(fontSize: 28)),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // DAY CARD (reflection text + stars)
+  // ─────────────────────────────────────────────
+  Widget _buildDayCard(bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F0F5),
+        color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFF2F0F5),
         borderRadius: BorderRadius.circular(24),
       ),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
@@ -283,28 +556,20 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'How was your day?',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: _textPrimary,
+                  color: isDark ? const Color(0xFFF2EEF9) : _textPrimary,
                 ),
               ),
               InkWell(
-                onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ChatScreen(
-                        initialMessage: '',
-                      ),
-                    ),
-                  );
-                  if (!mounted) return;
-                  setState(() => _currentNavIndex = 1);
-                  _loadJournalEntries();
-                },
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const ChatScreen(initialMessage: '')),
+                ),
                 borderRadius: BorderRadius.circular(20),
                 child: const Padding(
                   padding: EdgeInsets.all(4),
@@ -318,21 +583,25 @@ class _HomeScreenState extends State<HomeScreen> {
           TextField(
             controller: _dayReflectionController,
             maxLines: 4,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: _textPrimary,
+              color: isDark ? const Color(0xFFF1EEF8) : _textPrimary,
               height: 1.5,
             ),
             decoration: InputDecoration(
               hintText:
-                  'When the world feels too small to hold you, you’ll always find a place in my heart..💜',
-              hintStyle: const TextStyle(
-                color: Color(0xFFA5A3AE),
+                  'When the world feels too small to hold you, you\'ll always find a place in my heart..💜',
+              hintStyle: TextStyle(
+                color: isDark
+                    ? const Color(0xFFA09DB0)
+                    : const Color(0xFFA5A3AE),
                 fontSize: 14,
                 height: 1.5,
               ),
               filled: true,
-              fillColor: const Color(0xFFE7E4ED),
+              fillColor: isDark
+                  ? const Color(0xFF2A2B38)
+                  : const Color(0xFFE7E4ED),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               border: OutlineInputBorder(
@@ -345,11 +614,13 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Rate your day',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF2D2E38),
+                  color: isDark
+                      ? const Color(0xFFD5D2E2)
+                      : const Color(0xFF2D2E38),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -357,7 +628,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: List.generate(5, (index) {
                   final bool isSelected = index < _selectedRating;
                   return GestureDetector(
-                    onTap: () => setState(() => _selectedRating = index + 1),
+                    onTap: () =>
+                        setState(() => _selectedRating = index + 1),
                     child: Padding(
                       padding: const EdgeInsets.only(left: 4),
                       child: Icon(
@@ -365,7 +637,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? Icons.star_rounded
                             : Icons.star_outline_rounded,
                         size: 26,
-                        color: isSelected ? _purple : const Color(0xFFCBC8D3),
+                        color: isSelected
+                            ? _purple
+                            : const Color(0xFFCBC8D3),
                       ),
                     ),
                   );
@@ -380,9 +654,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // SEND TO AI BUTTON
-  // ─────────────────────────────────────────────────────────────
   Widget _buildSendToAIButton() {
     return Container(
       decoration: BoxDecoration(
@@ -397,16 +668,16 @@ class _HomeScreenState extends State<HomeScreen> {
             color: const Color(0xFF6D4A97).withOpacity(0.25),
             blurRadius: 12,
             offset: const Offset(0, 5),
-          ),
+          )
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(30),
-          onTap: () async {
-            final String initialMessage = _dayReflectionController.text.trim();
-            if (initialMessage.isEmpty) {
+          onTap: () {
+            final String msg = _dayReflectionController.text.trim();
+            if (msg.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Please write your reflection first.'),
@@ -415,35 +686,29 @@ class _HomeScreenState extends State<HomeScreen> {
               );
               return;
             }
-
-            await Navigator.push(
+            Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ChatScreen(
-                  initialMessage: initialMessage,
+                builder: (_) => ChatScreen(
+                  initialMessage: msg,
                   initialMood: _selectedMood,
                   initialRating: _selectedRating,
                 ),
               ),
             );
-            if (!mounted) return;
-            setState(() => _currentNavIndex = 1);
-            _loadJournalEntries();
           },
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  'Send to AI',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.3,
-                  ),
-                ),
+                Text('Send to AI',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
+                    )),
                 SizedBox(width: 6),
                 Text('✨', style: TextStyle(fontSize: 16)),
               ],
@@ -454,139 +719,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // RECENT REFLECTIONS
-  // ─────────────────────────────────────────────────────────────
-  Widget _buildRecentReflectionsSection() {
-    final recent = _journalEntries.take(2).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Recent Reflections',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: _textPrimary,
-              ),
-            ),
-            GestureDetector(
-              onTap: () => setState(() => _currentNavIndex = 1),
-              child: const Text(
-                'VIEW JOURNAL',
-                style: TextStyle(
-                  fontSize: 11,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w700,
-                  color: _purple,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (_isLoadingJournal)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: CircularProgressIndicator(color: _purple),
-            ),
-          )
-        else if (recent.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F3F8),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              children: [
-                Icon(Icons.auto_stories_outlined,
-                    size: 40, color: Colors.grey[350]),
-                const SizedBox(height: 10),
-                Text(
-                  'No reflections yet',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Write your first note and it will appear here.',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          )
-        else
-          ...recent.map(_buildRecentReflectionCard),
-      ],
-    );
-  }
-
-  Widget _buildRecentReflectionCard(JournalEntry reflection) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F3F8),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(reflection.emoji, style: const TextStyle(fontSize: 26)),
-              Text(
-                JournalDataSource.entryTimeLabel(reflection.dateTime),
-                style: const TextStyle(
-                  fontSize: 11,
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF3B3C46),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Text(
-                  reflection.content,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF4D4E58),
-                    height: 1.45,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward_ios_rounded,
-                  color: _purple, size: 16),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // BOTTOM NAVIGATION
-  // ─────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────
+  // BOTTOM NAV
+  // ─────────────────────────────────────────────
   Widget _buildBottomNavigation() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final List<Map<String, dynamic>> items = [
       {'icon': Icons.home_rounded, 'label': 'HOME'},
       {'icon': Icons.menu_book_outlined, 'label': 'JOURNAL'},
@@ -596,15 +733,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
-      decoration: const BoxDecoration(
-        color: Color(0xFFF0EEF5),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFF0EEF5),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: const [
           BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 10,
-            offset: Offset(0, -2),
-          ),
+              color: Color(0x0F000000),
+              blurRadius: 10,
+              offset: Offset(0, -2))
         ],
       ),
       child: Row(
@@ -612,16 +748,46 @@ class _HomeScreenState extends State<HomeScreen> {
         children: List.generate(items.length, (index) {
           final item = items[index];
           final bool active = index == _currentNavIndex;
-
           return GestureDetector(
-            onTap: () {
-              if (index == 3) {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            onTap: () async {
+              if (index == 1) {
+                setState(() => _currentNavIndex = index);
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => JournalScreen(
+                      name: _profileName.isNotEmpty ? _profileName : 'Friend',
+                      header: _buildHeader,
+                    ),
+                  ),
                 );
+                if (!mounted) return;
+                setState(() => _currentNavIndex = 0);
                 return;
               }
 
+              if (index == 2) {
+                setState(() => _currentNavIndex = index);
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const WeeklyReflectionsScreen()),
+                );
+                if (!mounted) return;
+                setState(() => _currentNavIndex = 0);
+                return;
+              }
+              if (index == 3) {
+                setState(() => _currentNavIndex = index);
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+                if (!mounted) return;
+                await _loadProfileData();
+                setState(() => _currentNavIndex = 0);
+                return;
+              }
               setState(() => _currentNavIndex = index);
             },
             child: AnimatedContainer(
@@ -642,22 +808,21 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    item['icon'] as IconData,
-                    color: active ? Colors.white : const Color(0xFF8A9AB3),
-                    size: 20,
-                  ),
+                  Icon(item['icon'] as IconData,
+                      color: active
+                          ? Colors.white
+                          : (isDark
+                              ? const Color(0xFF9C9AAF)
+                              : const Color(0xFF8A9AB3)),
+                      size: 20),
                   if (active) ...[
                     const SizedBox(width: 6),
-                    Text(
-                      item['label'] as String,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+                    Text(item['label'] as String,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                            letterSpacing: 0.5)),
                   ],
                 ],
               ),
