@@ -23,7 +23,12 @@ const Color _textPrimary = Color(0xFF1E1F29);
 const Color _textMuted = Color(0xFF888888);
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({
+    super.key,
+    this.showBottomNavigation = true,
+  });
+
+  final bool showBottomNavigation;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -521,7 +526,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigation(),
+      bottomNavigationBar:
+          widget.showBottomNavigation ? _buildBottomNavigation() : null,
     );
   }
 

@@ -12,8 +12,12 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
   static const Color _pink = Color(0xFFD45DA1);
   static const Color _bg = Color(0xFFF4F1F8);
   static const Color _cardBg = Color(0xFFFFFFFF);
+  static const Color _bgDark = Color(0xFF12131C);
+  static const Color _cardBgDark = Color(0xFF1A1C27);
   static const Color _textPrimary = Color(0xFF1E1F29);
   static const Color _textMuted = Color(0xFF888888);
+  static const Color _textPrimaryDark = Color(0xFFF2EEF9);
+  static const Color _textMutedDark = Color(0xFFB3AFC1);
 
   double _energyValue = 50;
   String? _selectedAction;
@@ -93,24 +97,32 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final stage = _currentStage;
     final color = _barColor;
     final pct = _energyValue.round();
+    final backgroundColor = isDark ? _bgDark : _bg;
+    final cardColor = isDark ? _cardBgDark : _cardBg;
+    final primaryTextColor = isDark ? _textPrimaryDark : _textPrimary;
+    final mutedTextColor = isDark ? _textMutedDark : _textMuted;
+    final panelColor = isDark ? const Color(0xFF242736) : Colors.white;
+    final panelTextColor =
+        isDark ? const Color(0xFFE5E0F3) : const Color(0xFF2E2E38);
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: _bg,
+        backgroundColor: backgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Energy Battery',
           style: TextStyle(
-            color: _textPrimary,
+            color: primaryTextColor,
             fontWeight: FontWeight.w700,
           ),
         ),
-        iconTheme: const IconThemeData(color: _textPrimary),
+        iconTheme: IconThemeData(color: primaryTextColor),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -121,11 +133,11 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: _cardBg,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(22),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(isDark ? 0.22 : 0.05),
                     blurRadius: 14,
                     offset: const Offset(0, 5),
                   ),
@@ -151,14 +163,14 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Energy Battery',
                           style: TextStyle(
-                            color: _textPrimary,
+                            color: primaryTextColor,
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                           ),
@@ -167,7 +179,7 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
                         Text(
                           'Tune in with your current energy and choose one caring action.',
                           style: TextStyle(
-                            color: _textMuted,
+                            color: mutedTextColor,
                             fontSize: 14,
                             height: 1.4,
                           ),
@@ -183,11 +195,11 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
               decoration: BoxDecoration(
-                color: _cardBg,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(22),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(isDark ? 0.22 : 0.05),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -196,12 +208,12 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     'How much energy do you have right now?',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF2E2E38),
+                      color: panelTextColor,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -219,7 +231,7 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
+                      color: color.withOpacity(isDark ? 0.2 : 0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -245,7 +257,9 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
                       value: _energyValue / 100,
                       minHeight: 10,
                       color: color,
-                      backgroundColor: const Color(0xFFEEEBF3),
+                      backgroundColor: isDark
+                          ? const Color(0xFF303342)
+                          : const Color(0xFFEEEBF3),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -256,7 +270,7 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
                       thumbColor: color,
                       thumbShape:
                           const RoundSliderThumbShape(enabledThumbRadius: 13),
-                      overlayColor: color.withOpacity(0.15),
+                      overlayColor: color.withOpacity(isDark ? 0.24 : 0.15),
                       trackHeight: 0,
                     ),
                     child: Slider(
@@ -281,7 +295,7 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
                           '0%',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey.shade400,
+                            color: mutedTextColor,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -289,7 +303,7 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
                           '100%',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey.shade400,
+                            color: mutedTextColor,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -304,10 +318,11 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.07),
+                color:
+                    isDark ? const Color(0xFF1B2230) : color.withOpacity(0.07),
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: color.withOpacity(0.22),
+                  color: color.withOpacity(isDark ? 0.35 : 0.22),
                   width: 1.2,
                 ),
               ),
@@ -316,9 +331,9 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
                 children: [
                   Text(
                     stage.question,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
-                      color: Color(0xFF2E2E38),
+                      color: panelTextColor,
                       fontWeight: FontWeight.w700,
                       height: 1.55,
                     ),
@@ -336,16 +351,19 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: selected ? color : Colors.white,
+                            color: selected ? color : panelColor,
                             borderRadius: BorderRadius.circular(22),
                             border: Border.all(
-                              color: color.withOpacity(selected ? 1.0 : 0.3),
+                              color: color.withOpacity(
+                                selected ? 1.0 : (isDark ? 0.45 : 0.3),
+                              ),
                               width: 1.5,
                             ),
                             boxShadow: selected
                                 ? [
                                     BoxShadow(
-                                      color: color.withOpacity(0.22),
+                                      color: color
+                                          .withOpacity(isDark ? 0.3 : 0.22),
                                       blurRadius: 8,
                                       offset: const Offset(0, 3),
                                     )
@@ -357,7 +375,9 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
                             style: TextStyle(
                               color: selected
                                   ? Colors.white
-                                  : const Color(0xFF4A4A54),
+                                  : (isDark
+                                      ? const Color(0xFFE6E1F1)
+                                      : const Color(0xFF4A4A54)),
                               fontWeight: FontWeight.w600,
                               fontSize: 13.5,
                             ),
@@ -373,7 +393,7 @@ class _EnergyBatteryScreenState extends State<EnergyBatteryScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.12),
+                        color: color.withOpacity(isDark ? 0.2 : 0.12),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Text(

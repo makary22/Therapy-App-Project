@@ -10,11 +10,46 @@ class AdviceSummaryScreen extends StatelessWidget {
   final List<Map<String, dynamic>> messages;
   final Future<Map<String, String>> _summaryFuture;
 
+  static final Map<String, Map<String, String>> _summaryCache = {};
+  static const int _maxSummaryCacheSize = 50;
+
   AdviceSummaryScreen({
     super.key,
     required this.messages,
-  }) : _summaryFuture =
-            AIService.generateConversationSummary(messages: messages);
+  }) : _summaryFuture = _getOrGenerateSummary(messages);
+
+  static String _conversationSignature(List<Map<String, dynamic>> messages) {
+    if (messages.isEmpty) return 'empty';
+
+    final last = messages.last;
+    final String lastText = (last['text'] as String? ?? '').trim();
+    final bool isUser = (last['isUser'] ?? false) == true;
+    final dynamic tsRaw = last['timestamp'];
+    final String ts =
+        tsRaw is DateTime ? tsRaw.toIso8601String() : (tsRaw?.toString() ?? '');
+
+    return '${messages.length}|$isUser|$ts|$lastText';
+  }
+
+  static Future<Map<String, String>> _getOrGenerateSummary(
+    List<Map<String, dynamic>> messages,
+  ) async {
+    final signature = _conversationSignature(messages);
+    final cached = _summaryCache[signature];
+    if (cached != null) {
+      return cached;
+    }
+
+    final generated = await AIService.generateConversationSummary(
+      messages: messages,
+    );
+
+    if (_summaryCache.length >= _maxSummaryCacheSize) {
+      _summaryCache.remove(_summaryCache.keys.first);
+    }
+    _summaryCache[signature] = generated;
+    return generated;
+  }
 
   // ── Colors (matches Home + Chat) ──
   static const Color _purple = Color(0xFF7B5EA7);

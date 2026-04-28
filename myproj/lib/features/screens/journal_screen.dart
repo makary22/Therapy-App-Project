@@ -63,7 +63,7 @@ class JournalDataSource {
             DateTime date = DateTime.now();
             final ts = firstUserMessage['timestamp'];
             if (ts is String) {
-              date = DateTime.tryParse(ts) ?? date;
+              date = _parseTimestampToLocal(ts) ?? date;
             }
 
             final int rating = (firstUserMessage['rating'] as num?)?.toInt() ??
@@ -121,13 +121,14 @@ class JournalDataSource {
 
             if (firstUserMessage == null) continue;
 
-            final String text = (firstUserMessage['text'] as String? ?? '').trim();
+            final String text =
+                (firstUserMessage['text'] as String? ?? '').trim();
             if (text.isEmpty) continue;
 
             DateTime date = DateTime.now();
             final ts = firstUserMessage['timestamp'];
             if (ts is String) {
-              date = DateTime.tryParse(ts) ?? date;
+              date = _parseTimestampToLocal(ts) ?? date;
             }
 
             final int rating = (firstUserMessage['rating'] as num?)?.toInt() ??
@@ -154,6 +155,12 @@ class JournalDataSource {
     return entries;
   }
 
+  static DateTime? _parseTimestampToLocal(String raw) {
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+    return parsed.toLocal();
+  }
+
   static String monthLabel(DateTime date) {
     const months = [
       'January',
@@ -173,18 +180,21 @@ class JournalDataSource {
   }
 
   static String entryTimeLabel(DateTime dateTime) {
+    final localDateTime = dateTime.toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final date = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    final date =
+        DateTime(localDateTime.year, localDateTime.month, localDateTime.day);
     final diff = today.difference(date).inDays;
 
-    final String suffix = dateTime.hour >= 12 ? 'PM' : 'AM';
-    int hour = dateTime.hour % 12;
+    final String suffix = localDateTime.hour >= 12 ? 'PM' : 'AM';
+    int hour = localDateTime.hour % 12;
     if (hour == 0) hour = 12;
-    final String minute = dateTime.minute.toString().padLeft(2, '0');
+    final String minute = localDateTime.minute.toString().padLeft(2, '0');
     final String time = '$hour:$minute $suffix';
 
     if (diff == 0) return 'TODAY • $time';
+    if (diff == 1) return 'YESTERDAY • $time';
     const monthShort = [
       'JAN',
       'FEB',
@@ -199,7 +209,7 @@ class JournalDataSource {
       'NOV',
       'DEC',
     ];
-    return '${monthShort[dateTime.month - 1]} ${dateTime.day} • $time';
+    return '${monthShort[localDateTime.month - 1]} ${localDateTime.day} • $time';
   }
 
   static List<JournalEntry> _sampleEntries() {
@@ -296,10 +306,14 @@ class JournalScreen extends StatefulWidget {
     super.key,
     required this.name,
     required this.header,
+    this.showBottomNavigation = true,
+    this.navIndexNotifier,
   });
 
   final String name;
   final Widget Function(String name) header;
+  final bool showBottomNavigation;
+  final ValueNotifier<int>? navIndexNotifier;
 
   @override
   State<JournalScreen> createState() => _JournalScreenState();
@@ -325,6 +339,8 @@ class _JournalScreenState extends State<JournalScreen> {
   void initState() {
     super.initState();
     _loadEntries();
+    // listen for tab activation from HomeScreen (if provided)
+    widget.navIndexNotifier?.addListener(_navListener);
   }
 
   Future<void> _loadEntries() async {
@@ -339,6 +355,31 @@ class _JournalScreenState extends State<JournalScreen> {
         ..clear()
         ..addAll(favs);
       _isLoadingJournal = false;
+    });
+  }
+
+  void _navListener() {
+    if (widget.navIndexNotifier?.value == 1) {
+      final now = DateTime.now();
+      setState(() {
+        _visibleMonth = DateTime(now.year, now.month);
+        _selectedDate = DateTime(now.year, now.month, now.day);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.navIndexNotifier?.removeListener(_navListener);
+    super.dispose();
+  }
+
+  // Public helper to reset calendar to today
+  void resetToToday() {
+    final now = DateTime.now();
+    setState(() {
+      _visibleMonth = DateTime(now.year, now.month);
+      _selectedDate = DateTime(now.year, now.month, now.day);
     });
   }
 
@@ -379,7 +420,8 @@ class _JournalScreenState extends State<JournalScreen> {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF12131C) : const Color(0xFFF4F1F8),
+      backgroundColor:
+          isDark ? const Color(0xFF12131C) : const Color(0xFFF4F1F8),
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(72),
         child: SafeArea(
@@ -400,35 +442,38 @@ class _JournalScreenState extends State<JournalScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Your Journey',
                     style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w700,
-                      color: _purple,
+                      color: isDark ? const Color(0xFFE8DEF8) : _purple,
                       height: 1.1,
                     ),
                   ),
                   Text(
                     'Reflecting on ${JournalDataSource.monthLabel(_visibleMonth)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
-                      color: Color(0xFF50505A),
+                      color: isDark
+                          ? const Color(0xFFB7B1C7)
+                          : const Color(0xFF50505A),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 14),
-                  _buildCalendarCard(entriesForVisibleMonth),
+                  _buildCalendarCard(entriesForVisibleMonth, isDark),
                   const SizedBox(height: 14),
-                  _buildFavoritesSection(),
+                  _buildFavoritesSection(isDark),
                 ],
               ),
             ),
-      bottomNavigationBar: _buildBottomNavigation(isDark),
+      bottomNavigationBar:
+          widget.showBottomNavigation ? _buildBottomNavigation(isDark) : null,
     );
   }
 
-  Widget _buildCalendarCard(List<JournalEntry> monthEntries) {
+  Widget _buildCalendarCard(List<JournalEntry> monthEntries, bool isDark) {
     final firstDayOfMonth =
         DateTime(_visibleMonth.year, _visibleMonth.month, 1);
     final startOffset = firstDayOfMonth.weekday - 1;
@@ -436,13 +481,15 @@ class _JournalScreenState extends State<JournalScreen> {
         DateTime(_visibleMonth.year, _visibleMonth.month + 1, 0).day;
     final totalCells = ((startOffset + daysInMonth + 6) ~/ 7) * 7;
 
-    final daysWithEntries = monthEntries
-        .map((e) => DateTime(e.dateTime.year, e.dateTime.month, e.dateTime.day))
-        .toSet();
+    final Map<DateTime, int> entriesCount = {};
+    for (final e in monthEntries) {
+      final d = DateTime(e.dateTime.year, e.dateTime.month, e.dateTime.day);
+      entriesCount[d] = (entriesCount[d] ?? 0) + 1;
+    }
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFECE9F2),
+        color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFECE9F2),
         borderRadius: BorderRadius.circular(24),
       ),
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
@@ -454,64 +501,73 @@ class _JournalScreenState extends State<JournalScreen> {
               _calendarArrow(
                 Icons.chevron_left_rounded,
                 () => setState(() {
-                  _visibleMonth =
+                  final newVisible =
                       DateTime(_visibleMonth.year, _visibleMonth.month - 1);
-                  _selectedDate =
-                      DateTime(_visibleMonth.year, _visibleMonth.month, 1);
+                  _visibleMonth = newVisible;
+                  final now = DateTime.now();
+                  if (newVisible.year == now.year &&
+                      newVisible.month == now.month) {
+                    _selectedDate = DateTime(now.year, now.month, now.day);
+                  } else {
+                    final desiredDay = _selectedDate.day;
+                    final daysInNew =
+                        DateTime(newVisible.year, newVisible.month + 1, 0).day;
+                    final day =
+                        desiredDay <= daysInNew ? desiredDay : daysInNew;
+                    _selectedDate =
+                        DateTime(newVisible.year, newVisible.month, day);
+                  }
                 }),
               ),
               const SizedBox(width: 8),
               _calendarArrow(
                 Icons.chevron_right_rounded,
                 () => setState(() {
-                  _visibleMonth =
+                  final newVisible =
                       DateTime(_visibleMonth.year, _visibleMonth.month + 1);
-                  _selectedDate =
-                      DateTime(_visibleMonth.year, _visibleMonth.month, 1);
+                  _visibleMonth = newVisible;
+                  final now = DateTime.now();
+                  if (newVisible.year == now.year &&
+                      newVisible.month == now.month) {
+                    _selectedDate = DateTime(now.year, now.month, now.day);
+                  } else {
+                    final desiredDay = _selectedDate.day;
+                    final daysInNew =
+                        DateTime(newVisible.year, newVisible.month + 1, 0).day;
+                    final day =
+                        desiredDay <= daysInNew ? desiredDay : daysInNew;
+                    _selectedDate =
+                        DateTime(newVisible.year, newVisible.month, day);
+                  }
                 }),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Text('MON',
+            children: List.generate(
+              7,
+              (index) {
+                const labels = [
+                  'MON',
+                  'TUE',
+                  'WED',
+                  'THU',
+                  'FRI',
+                  'SAT',
+                  'SUN'
+                ];
+                return Text(
+                  labels[index],
                   style: TextStyle(
-                      fontSize: 12,
-                      color: _textMuted,
-                      fontWeight: FontWeight.w700)),
-              Text('TUE',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: _textMuted,
-                      fontWeight: FontWeight.w700)),
-              Text('WED',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: _textMuted,
-                      fontWeight: FontWeight.w700)),
-              Text('THU',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: _textMuted,
-                      fontWeight: FontWeight.w700)),
-              Text('FRI',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: _textMuted,
-                      fontWeight: FontWeight.w700)),
-              Text('SAT',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: _textMuted,
-                      fontWeight: FontWeight.w700)),
-              Text('SUN',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: _textMuted,
-                      fontWeight: FontWeight.w700)),
-            ],
+                    fontSize: 12,
+                    color: isDark ? const Color(0xFF9C9AAF) : _textMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                );
+              },
+            ),
           ),
           const SizedBox(height: 10),
           GridView.builder(
@@ -531,17 +587,19 @@ class _JournalScreenState extends State<JournalScreen> {
               }
               final date =
                   DateTime(_visibleMonth.year, _visibleMonth.month, dayNumber);
-              final hasEntry = daysWithEntries.contains(date);
+              final entryCount = entriesCount[date] ?? 0;
+              final hasEntry = entryCount > 0;
               final selected = _selectedDate.year == date.year &&
                   _selectedDate.month == date.month &&
                   _selectedDate.day == date.day;
+              final selectedBg =
+                  isDark ? const Color(0xFF3A344A) : const Color(0xFFDCD4EB);
 
               return GestureDetector(
                 onTap: () => setState(() => _selectedDate = date),
                 child: Container(
                   decoration: BoxDecoration(
-                    color:
-                        selected ? const Color(0xFFDCD4EB) : Colors.transparent,
+                    color: selected ? selectedBg : Colors.transparent,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -552,18 +610,34 @@ class _JournalScreenState extends State<JournalScreen> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: selected ? _purple : _textPrimary,
+                          color: selected
+                              ? (isDark ? const Color(0xFFF2EEF9) : _purple)
+                              : (isDark
+                                  ? const Color(0xFFE1DCEC)
+                                  : _textPrimary),
                         ),
                       ),
                       const SizedBox(height: 3),
-                      Container(
-                        width: 5,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: hasEntry ? _purple : Colors.transparent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
+                      // Dynamic dot: size and opacity reflect number of entries on that day
+                      Builder(builder: (_) {
+                        if (!hasEntry) {
+                          return const SizedBox(width: 5, height: 5);
+                        }
+                        final int count = entryCount;
+                        final double size =
+                            count == 1 ? 5 : (count <= 3 ? 7 : 9);
+                        final double opacity =
+                            (0.4 + (count.clamp(1, 4) * 0.15)).clamp(0.4, 1.0);
+                        final dotColor = Color.fromRGBO(123, 94, 167, opacity);
+                        return Container(
+                          width: size,
+                          height: size,
+                          decoration: BoxDecoration(
+                            color: dotColor,
+                            shape: BoxShape.circle,
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -575,7 +649,7 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
-  Widget _buildFavoritesSection() {
+  Widget _buildFavoritesSection(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -592,14 +666,15 @@ class _JournalScreenState extends State<JournalScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F3F8),
+              color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFF5F3F8),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
+            child: Text(
               'No favorite chats yet.',
               style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF696570),
+                color:
+                    isDark ? const Color(0xFFB7B1C7) : const Color(0xFF696570),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -609,7 +684,7 @@ class _JournalScreenState extends State<JournalScreen> {
             children: _favoriteEntries
                 .map((e) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildJournalEntryCard(e),
+                      child: _buildJournalEntryCard(e, isDark),
                     ))
                 .toList(),
           ),
@@ -735,11 +810,11 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
-  Widget _buildJournalEntryCard(JournalEntry entry) {
+  Widget _buildJournalEntryCard(JournalEntry entry, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Material(
-        color: const Color(0xFFF1EFF5),
+        color: isDark ? const Color(0xFF232534) : const Color(0xFFF1EFF5),
         borderRadius: BorderRadius.circular(24),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
@@ -767,10 +842,12 @@ class _JournalScreenState extends State<JournalScreen> {
                       children: [
                         Text(
                           JournalDataSource.entryTimeLabel(entry.dateTime),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             letterSpacing: 1,
-                            color: Color(0xFF73707C),
+                            color: isDark
+                                ? const Color(0xFFACA7BB)
+                                : const Color(0xFF73707C),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -802,9 +879,11 @@ class _JournalScreenState extends State<JournalScreen> {
               const SizedBox(height: 12),
               Text(
                 '"${entry.content}"',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF4D4E58),
+                  color: isDark
+                      ? const Color(0xFFD6D1E2)
+                      : const Color(0xFF4D4E58),
                   height: 1.5,
                   fontStyle: FontStyle.italic,
                 ),
@@ -820,14 +899,17 @@ class _JournalScreenState extends State<JournalScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE3DFEA),
+                          color: isDark
+                              ? const Color(0xFF343748)
+                              : const Color(0xFFE3DFEA),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           tag.toUpperCase(),
                           style: TextStyle(
                             fontSize: 11,
-                            color: entry.accent,
+                            color:
+                                isDark ? const Color(0xFFE7DCF9) : entry.accent,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.3,
                           ),

@@ -9,7 +9,16 @@ import 'journal_screen.dart';
 import 'profile_screen.dart';
 
 class WeeklyReflectionsScreen extends StatefulWidget {
-  const WeeklyReflectionsScreen({super.key});
+  const WeeklyReflectionsScreen({
+    super.key,
+    this.showBottomNavigation = true,
+    this.name,
+    this.header,
+  });
+
+  final bool showBottomNavigation;
+  final String? name;
+  final Widget Function(String name)? header;
 
   @override
   State<WeeklyReflectionsScreen> createState() =>
@@ -113,7 +122,8 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
   // ── Infer a 1-5 rating from free text when no explicit rating exists ────
   static int _inferRatingFromText(String text) {
     final lower = text.toLowerCase();
-    if (RegExp(r'great|happy|grateful|calm|peace|amazing|wonderful|جميل|ممتاز|سعيد|زين')
+    if (RegExp(
+            r'great|happy|grateful|calm|peace|amazing|wonderful|جميل|ممتاز|سعيد|زين')
         .hasMatch(lower)) return 5;
     if (RegExp(r'good|better|okay|productive|hope|كويس|تمام|أحسن')
         .hasMatch(lower)) return 4;
@@ -141,9 +151,18 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
     if (parts.length != 2) return null;
 
     const monthMap = {
-      'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4,
-      'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8,
-      'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12,
+      'Jan': 1,
+      'Feb': 2,
+      'Mar': 3,
+      'Apr': 4,
+      'May': 5,
+      'Jun': 6,
+      'Jul': 7,
+      'Aug': 8,
+      'Sep': 9,
+      'Oct': 10,
+      'Nov': 11,
+      'Dec': 12,
     };
 
     final month = monthMap[parts[0]];
@@ -217,14 +236,89 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
             ),
           ],
         ),
-        CircleAvatar(
-          backgroundColor: isDark ? const Color(0xFF2D2F3D) : _purple,
-          child: Text(
-            name.isNotEmpty ? name[0].toUpperCase() : 'U',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            );
+          },
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color:
+                    isDark ? const Color(0xFF383A4A) : const Color(0xFFD4D2DD),
+                width: 2,
+              ),
+            ),
+            child: CircleAvatar(
+              backgroundColor: isDark ? const Color(0xFF2D2F3D) : _purple,
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFallbackHeader(String name, bool isDark) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.eco_outlined,
+              size: 22,
+              color: isDark ? const Color(0xFFE5DFF0) : _purple,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Safe Space',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: isDark ? const Color(0xFFE5DFF0) : _purple,
+              ),
+            ),
+          ],
+        ),
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            );
+          },
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color:
+                    isDark ? const Color(0xFF383A4A) : const Color(0xFFD4D2DD),
+                width: 2,
+              ),
+            ),
+            child: CircleAvatar(
+              backgroundColor: isDark ? const Color(0xFF2D2F3D) : _purple,
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ),
         ),
@@ -268,7 +362,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final String name = _displayName();
+    final String name = widget.name ?? _displayName();
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
@@ -278,54 +372,9 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
           bottom: false,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.eco_outlined,
-                      size: 22,
-                      color: isDark ? const Color(0xFFE5DFF0) : _purple,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Safe Space',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? const Color(0xFFE5DFF0) : _purple,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark
-                          ? const Color(0xFF383A4A)
-                          : const Color(0xFFD4D2DD),
-                      width: 2,
-                    ),
-                  ),
-                  child: CircleAvatar(
-                    backgroundColor:
-                        isDark ? const Color(0xFF2D2F3D) : _purple,
-                    child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: widget.header != null
+                ? widget.header!(name)
+                : _buildFallbackHeader(name, isDark),
           ),
         ),
       ),
@@ -365,7 +414,8 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
                 ],
               ),
             ),
-      bottomNavigationBar: _buildBottomNavigation(isDark),
+      bottomNavigationBar:
+          widget.showBottomNavigation ? _buildBottomNavigation(isDark) : null,
     );
   }
 
@@ -482,8 +532,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
           ),
           const SizedBox(height: 12),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.22),
               borderRadius: BorderRadius.circular(999),
@@ -535,9 +584,7 @@ class _WeeklyReflectionsScreenState extends State<WeeklyReflectionsScreen> {
               fontSize: 11,
               letterSpacing: 1.2,
               fontWeight: FontWeight.w700,
-              color: isDark
-                  ? const Color(0xFFB4AFBF)
-                  : const Color(0xFF6C6B75),
+              color: isDark ? const Color(0xFFB4AFBF) : const Color(0xFF6C6B75),
             ),
           ),
         ],
@@ -992,8 +1039,8 @@ class _WeeklyInsights {
     final dayLabels = dailyBuckets.keys.map(_dayLabel).toList();
 
     final topEmotions = _buildTopEmotions(moodCounts, textCounts);
-    final advice = _weeklyAdvice(
-        weeklyAverage, streakDays, checkInDays, ratedDays.length);
+    final advice =
+        _weeklyAdvice(weeklyAverage, streakDays, checkInDays, ratedDays.length);
 
     return _WeeklyInsights(
       weeklyAverage: weeklyAverage,

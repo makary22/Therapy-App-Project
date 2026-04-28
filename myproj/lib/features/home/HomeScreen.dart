@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _selectedMood;
   int _selectedRating = 0;
   int _currentNavIndex = 0;
+  final ValueNotifier<int> _navIndexNotifier = ValueNotifier<int>(0);
 
   // Water tracker state
   static const int _waterGoal = 8; // cups
@@ -45,7 +46,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // Daily quote — rotates by day-of-year
   static const List<Map<String, String>> _quotes = [
     {
-      'text': 'Don\'t spend time beating on a wall, hoping it will turn into a door.',
+      'text':
+          'Don\'t spend time beating on a wall, hoping it will turn into a door.',
       'author': 'Coco Chanel',
     },
     {
@@ -88,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _dayReflectionController.dispose();
+    _navIndexNotifier.dispose();
     super.dispose();
   }
 
@@ -117,8 +120,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
     final lastResetMs = prefs.getInt(_waterLastResetKey);
-    final bool shouldReset =
-        lastResetMs == null || now.difference(DateTime.fromMillisecondsSinceEpoch(lastResetMs)).inHours >= 24;
+    final bool shouldReset = lastResetMs == null ||
+        now
+                .difference(DateTime.fromMillisecondsSinceEpoch(lastResetMs))
+                .inHours >=
+            24;
 
     if (shouldReset) {
       await prefs.setInt('water_cups', 0);
@@ -132,7 +138,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _saveWaterData() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_waterLastResetKey, DateTime.now().millisecondsSinceEpoch);
+    await prefs.setInt(
+        _waterLastResetKey, DateTime.now().millisecondsSinceEpoch);
     await prefs.setInt('water_cups', _waterCups);
   }
 
@@ -150,31 +157,48 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF12131C) : _bg,
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          children: [
-            _buildHeader(name),
-            const SizedBox(height: 20),
-            _buildGreeting(name),
-            const SizedBox(height: 6),
-            const SizedBox(height: 14),
-            // ── Message of the Day ──
-            _buildMessageOfTheDay(isDark),
-            const SizedBox(height: 16),
-            // ── Mood selector with labels ──
-            _buildMoodCard(isDark),
-            const SizedBox(height: 16),
-            // ── Day reflection + rating ──
-            _buildDayCard(isDark),
-            const SizedBox(height: 16),
-            // ── Water tracker ──
-            _buildWaterTracker(isDark),
-            const SizedBox(height: 16),
-          ],
-        ),
+      body: IndexedStack(
+        index: _currentNavIndex,
+        children: [
+          _buildHomeContent(isDark, name),
+          JournalScreen(
+            name: name,
+            header: _buildHeader,
+            showBottomNavigation: false,
+            navIndexNotifier: _navIndexNotifier,
+          ),
+          WeeklyReflectionsScreen(
+            showBottomNavigation: false,
+            name: name,
+            header: _buildHeader,
+          ),
+          const ProfileScreen(showBottomNavigation: false),
+        ],
       ),
       bottomNavigationBar: _buildBottomNavigation(),
+    );
+  }
+
+  Widget _buildHomeContent(bool isDark, String name) {
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        children: [
+          _buildHeader(name),
+          const SizedBox(height: 20),
+          _buildGreeting(name),
+          const SizedBox(height: 6),
+          const SizedBox(height: 14),
+          _buildMessageOfTheDay(isDark),
+          const SizedBox(height: 16),
+          _buildMoodCard(isDark),
+          const SizedBox(height: 16),
+          _buildDayCard(isDark),
+          const SizedBox(height: 16),
+          _buildWaterTracker(isDark),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 
@@ -300,14 +324,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       option['label']!,
                       style: TextStyle(
                         fontSize: 10,
-                        fontWeight: isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
                         color: isSelected
                             ? _purple
-                            : (isDark
-                                ? const Color(0xFFA8A6B5)
-                                : _textMuted),
+                            : (isDark ? const Color(0xFFA8A6B5) : _textMuted),
                         letterSpacing: 0.2,
                       ),
                     ),
@@ -434,8 +455,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFF4A90D9).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(14),
@@ -468,8 +488,8 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Row(
           children: [
-            Icon(Icons.eco_outlined, size: 22,
-                color: isDark ? const Color(0xFFE5DFF0) : _purple),
+            Icon(Icons.eco_outlined,
+                size: 22, color: isDark ? const Color(0xFFE5DFF0) : _purple),
             const SizedBox(width: 6),
             Text(
               'Safe Space',
@@ -494,9 +514,8 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: isDark
-                    ? const Color(0xFF383A4A)
-                    : const Color(0xFFD4D2DD),
+                color:
+                    isDark ? const Color(0xFF383A4A) : const Color(0xFFD4D2DD),
                 width: 2,
               ),
             ),
@@ -505,8 +524,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? Image.memory(_avatarBytes!,
                       fit: BoxFit.cover, width: 44, height: 44)
                   : CircleAvatar(
-                      backgroundColor:
-                          isDark ? const Color(0xFF2D2F3D) : _dark,
+                      backgroundColor: isDark ? const Color(0xFF2D2F3D) : _dark,
                       child: Text(initial,
                           style: const TextStyle(
                               color: Colors.white,
@@ -592,16 +610,14 @@ class _HomeScreenState extends State<HomeScreen> {
               hintText:
                   'When the world feels too small to hold you, you\'ll always find a place in my heart..💜',
               hintStyle: TextStyle(
-                color: isDark
-                    ? const Color(0xFFA09DB0)
-                    : const Color(0xFFA5A3AE),
+                color:
+                    isDark ? const Color(0xFFA09DB0) : const Color(0xFFA5A3AE),
                 fontSize: 14,
                 height: 1.5,
               ),
               filled: true,
-              fillColor: isDark
-                  ? const Color(0xFF2A2B38)
-                  : const Color(0xFFE7E4ED),
+              fillColor:
+                  isDark ? const Color(0xFF2A2B38) : const Color(0xFFE7E4ED),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               border: OutlineInputBorder(
@@ -628,8 +644,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: List.generate(5, (index) {
                   final bool isSelected = index < _selectedRating;
                   return GestureDetector(
-                    onTap: () =>
-                        setState(() => _selectedRating = index + 1),
+                    onTap: () => setState(() => _selectedRating = index + 1),
                     child: Padding(
                       padding: const EdgeInsets.only(left: 4),
                       child: Icon(
@@ -637,9 +652,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? Icons.star_rounded
                             : Icons.star_outline_rounded,
                         size: 26,
-                        color: isSelected
-                            ? _purple
-                            : const Color(0xFFCBC8D3),
+                        color: isSelected ? _purple : const Color(0xFFCBC8D3),
                       ),
                     ),
                   );
@@ -738,9 +751,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x0F000000),
-              blurRadius: 10,
-              offset: Offset(0, -2))
+              color: Color(0x0F000000), blurRadius: 10, offset: Offset(0, -2))
         ],
       ),
       child: Row(
@@ -749,46 +760,10 @@ class _HomeScreenState extends State<HomeScreen> {
           final item = items[index];
           final bool active = index == _currentNavIndex;
           return GestureDetector(
-            onTap: () async {
-              if (index == 1) {
-                setState(() => _currentNavIndex = index);
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => JournalScreen(
-                      name: _profileName.isNotEmpty ? _profileName : 'Friend',
-                      header: _buildHeader,
-                    ),
-                  ),
-                );
-                if (!mounted) return;
-                setState(() => _currentNavIndex = 0);
-                return;
-              }
-
-              if (index == 2) {
-                setState(() => _currentNavIndex = index);
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const WeeklyReflectionsScreen()),
-                );
-                if (!mounted) return;
-                setState(() => _currentNavIndex = 0);
-                return;
-              }
-              if (index == 3) {
-                setState(() => _currentNavIndex = index);
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                );
-                if (!mounted) return;
-                await _loadProfileData();
-                setState(() => _currentNavIndex = 0);
-                return;
-              }
+            onTap: () {
+              if (index == _currentNavIndex) return;
               setState(() => _currentNavIndex = index);
+              _navIndexNotifier.value = index;
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
