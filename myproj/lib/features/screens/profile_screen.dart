@@ -8,8 +8,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/auth_service.dart';
 import '../home/HomeScreen.dart';
+import '../notifications/push_notification_service.dart';
 import 'journal_screen.dart';
 import '../theme/app_theme_controller.dart';
+import 'technical_support_screen.dart';
 import 'weekly_reflections_screen.dart';
 import 'login.dart';
 
@@ -32,8 +34,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ImagePicker _imagePicker = ImagePicker();
 
   bool _darkTheme = false;
-  bool _smartNotifications = true;
-  bool _dailyReminder = true;
   bool _isSigningOut = false;
   int _currentNavIndex = 3;
   String _selectedReminderTime = '08:00 AM';
@@ -73,11 +73,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
       helpText: 'Choose reminder time',
     );
     if (selected == null || !mounted) return;
+    final reminderLabel = _formatTime(selected);
+
     setState(() {
-      _selectedReminderTime = _formatTime(selected);
-      _dailyReminder = true;
+      _selectedReminderTime = reminderLabel;
     });
+
+    // Save preferences first so the new time is persisted
     await _savePreferences();
+
+    // Schedule the daily reminder at the chosen time
+    await PushNotificationService.scheduleDailyReminder(
+      hour: selected.hour,
+      minute: selected.minute,
+    );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Daily notification set for $reminderLabel'),
+        backgroundColor: _purple,
+      ),
+    );
+  }
+
+  Future<void> _openTechnicalSupport() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const TechnicalSupportScreen()),
+    );
   }
 
   @override
@@ -116,22 +139,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _avatarBytes =
           savedAvatarBase64 == null ? null : base64Decode(savedAvatarBase64);
       _darkTheme = prefs.getBool('profile_dark_theme') ?? false;
-      _smartNotifications =
-          prefs.getBool('profile_smart_notifications') ?? true;
-      _dailyReminder = prefs.getBool('profile_daily_reminder') ?? true;
       _selectedReminderTime =
           prefs.getString('profile_reminder_time') ?? '08:00 AM';
       _nameController.text = _fullName;
     });
 
     await AppThemeController.setDarkMode(_darkTheme);
+
+    // Re-schedule reminder using the saved time on every app open
+    final reminder = _parseTime(_selectedReminderTime);
+    await PushNotificationService.scheduleDailyReminder(
+      hour: reminder.hour,
+      minute: reminder.minute,
+    );
   }
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('profile_dark_theme', _darkTheme);
-    await prefs.setBool('profile_smart_notifications', _smartNotifications);
-    await prefs.setBool('profile_daily_reminder', _dailyReminder);
     await prefs.setString('profile_reminder_time', _selectedReminderTime);
     await prefs.setString('profile_name', _fullName);
     if (_avatarBase64 != null && _avatarBase64!.isNotEmpty) {
@@ -343,7 +368,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ?.updateDisplayName(updatedName)
                           .catchError((_) {});
 
-                      if (!mounted) return;
+                      if (!mounted || !sheetContext.mounted) return;
                       Navigator.of(sheetContext).pop();
 
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -767,12 +792,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _PreferenceTile(
             isDark: isDark,
             icon: Icons.access_time_rounded,
-            title: 'Daily Reflection',
-            subtitle: 'Gentle reminder to check in',
+            title: 'Notification Time',
+            subtitle: 'Choose when your daily reminder arrives',
             trailing: _TimePickerChip(
               isDark: isDark,
               value: _selectedReminderTime,
-              enabled: _dailyReminder,
               onTap: _pickReminderTime,
             ),
           ),
@@ -789,7 +813,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 await AppThemeController.setDarkMode(value);
                 await _savePreferences();
               },
-              activeColor: Colors.white,
+              activeThumbColor: Colors.white,
               activeTrackColor: _purple,
               inactiveThumbColor:
                   isDark ? const Color(0xFFBEBACD) : Colors.white,
@@ -800,21 +824,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 8),
           _PreferenceTile(
             isDark: isDark,
-            icon: Icons.notifications_none_rounded,
-            title: 'Smart Notifications',
-            subtitle: 'Insights and activity alerts',
-            trailing: Switch(
-              value: _smartNotifications,
-              onChanged: (value) async {
-                setState(() => _smartNotifications = value);
-                await _savePreferences();
-              },
-              activeColor: Colors.white,
-              activeTrackColor: _purple,
-              inactiveThumbColor:
-                  isDark ? const Color(0xFFBEBACD) : Colors.white,
-              inactiveTrackColor:
-                  isDark ? const Color(0xFF3A3B4D) : const Color(0xFFD6D3DE),
+            icon: Icons.support_agent_rounded,
+            title: 'Technical Support',
+            subtitle: 'Open a ticket if you face any issue',
+            trailing: TextButton.icon(
+              onPressed: _openTechnicalSupport,
+              style: TextButton.styleFrom(
+                foregroundColor: _purple,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              ),
+              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+              label: const Text(
+                'Open',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
           ),
         ],
@@ -873,7 +897,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1A1C27) : const Color(0xFFF0EEF5),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0F000000),
@@ -1049,13 +1073,11 @@ class _PreferenceTile extends StatelessWidget {
 class _TimePickerChip extends StatelessWidget {
   final bool isDark;
   final String value;
-  final bool enabled;
   final VoidCallback onTap;
 
   const _TimePickerChip({
     required this.isDark,
     required this.value,
-    required this.enabled,
     required this.onTap,
   });
 
@@ -1065,9 +1087,7 @@ class _TimePickerChip extends StatelessWidget {
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: enabled
-            ? (isDark ? const Color(0xFF35374A) : const Color(0xFFE0DBEA))
-            : (isDark ? const Color(0xFF2A2B38) : const Color(0xFFE8E6EF)),
+        color: isDark ? const Color(0xFF35374A) : const Color(0xFFE0DBEA),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Material(

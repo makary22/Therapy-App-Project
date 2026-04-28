@@ -17,6 +17,8 @@ void main() async {
   await AppThemeController.initialize();
 
   final prefs = await SharedPreferences.getInstance();
+  final reminderTime = prefs.getString('profile_reminder_time') ?? '08:00 AM';
+  await PushNotificationService.scheduleDailyReminderFromLabel(reminderTime);
 
   final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
 
