@@ -11,12 +11,14 @@ class ChatScreen extends StatefulWidget {
   final String initialMessage;
   final String? initialMood;
   final int initialRating;
+  final int? initialSessionIndex;
 
   const ChatScreen({
     super.key,
     required this.initialMessage,
     this.initialMood,
     this.initialRating = 0,
+    this.initialSessionIndex,
   });
 
   @override
@@ -60,6 +62,19 @@ class _ChatScreenState extends State<ChatScreen> {
   // ─────────────────────────────────────────────────────────────
   Future<void> _bootstrapChat() async {
     await _loadSessions();
+
+    final int? targetSessionIndex = widget.initialSessionIndex;
+    if (targetSessionIndex != null &&
+        targetSessionIndex >= 0 &&
+        targetSessionIndex < _sessions.length) {
+      if (!mounted) return;
+      setState(() {
+        _activeSessionIndex = targetSessionIndex;
+        _isTyping = false;
+      });
+      _scrollToBottom();
+      return;
+    }
 
     final String firstMessage = widget.initialMessage.trim();
     if (firstMessage.isEmpty) return;
@@ -290,7 +305,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_sessions.isEmpty ||
         _activeSessionIndex < 0 ||
         _activeSessionIndex >= _sessions.length) return false;
-    return (_sessions[_activeSessionIndex]['favorite'] ?? false) as bool;
+    return _sessions[_activeSessionIndex]['favorite'] ?? false;
   }
 
   void _toggleFavorite() {
@@ -299,7 +314,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _activeSessionIndex >= _sessions.length) return;
     setState(() {
       final cur = _sessions[_activeSessionIndex];
-      cur['favorite'] = !(cur['favorite'] ?? false) as bool;
+      cur['favorite'] = !(cur['favorite'] ?? false);
     });
     _saveSessions();
   }
@@ -931,6 +946,51 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
   }
 
+  Future<void> _confirmDeleteSession(int sessionIndex) async {
+    if (sessionIndex < 0 || sessionIndex >= _sessions.length) return;
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete conversation'),
+        content:
+            const Text('Are you sure you want to delete this conversation?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _deleteSession(sessionIndex);
+      // Close the history sheet after deletion so UI updates.
+      Navigator.pop(context);
+    }
+  }
+
+  void _deleteSession(int sessionIndex) {
+    if (sessionIndex < 0 || sessionIndex >= _sessions.length) return;
+
+    setState(() {
+      _sessions.removeAt(sessionIndex);
+      if (_sessions.isEmpty) {
+        _activeSessionIndex = -1;
+      } else {
+        _activeSessionIndex =
+            (_sessions.length - 1).clamp(0, _sessions.length - 1);
+      }
+    });
+
+    _saveSessions();
+  }
+
   void _showHistorySheet() {
     showModalBottomSheet(
       context: context,
@@ -1080,26 +1140,56 @@ class _ChatScreenState extends State<ChatScreen> {
                                             ),
                                           ],
                                         ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: isDark
-                                                ? const Color(0xFF2F3141)
-                                                : _cardBg,
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                          ),
-                                          child: Text(
-                                            '$msgCount msgs',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: isDark
-                                                  ? const Color(0xFFB2AFC1)
-                                                  : _textMuted,
-                                              fontWeight: FontWeight.w600,
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: isDark
+                                                    ? const Color(0xFF2F3141)
+                                                    : _cardBg,
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                              child: Text(
+                                                '$msgCount msgs',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: isDark
+                                                      ? const Color(0xFFB2AFC1)
+                                                      : _textMuted,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
                                             ),
-                                          ),
+                                            const SizedBox(width: 8),
+                                            GestureDetector(
+                                              onTap: () =>
+                                                  _confirmDeleteSession(
+                                                      sessionIndex),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  color: isDark
+                                                      ? const Color(0xFF2F3141)
+                                                      : _cardBg,
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Icon(
+                                                  Icons.delete_outline,
+                                                  size: 16,
+                                                  color: isDark
+                                                      ? const Color(0xFFB2AFC1)
+                                                      : _purple,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),

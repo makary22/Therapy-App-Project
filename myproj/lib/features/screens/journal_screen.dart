@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../chat/ChatScreen.dart';
 import '../home/HomeScreen.dart';
 import 'profile_screen.dart';
 import 'weekly_reflections_screen.dart';
@@ -16,6 +17,7 @@ class JournalEntry {
     required this.emoji,
     required this.tags,
     required this.accent,
+    this.sessionIndex,
   });
 
   final String title;
@@ -25,6 +27,7 @@ class JournalEntry {
   final String emoji;
   final List<String> tags;
   final Color accent;
+  final int? sessionIndex;
 }
 
 class JournalDataSource {
@@ -103,7 +106,8 @@ class JournalDataSource {
       try {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
-          for (final session in decoded) {
+          for (int i = 0; i < decoded.length; i++) {
+            final session = decoded[i];
             if (session is! Map<String, dynamic>) continue;
             if (session['favorite'] != true) continue;
             final messages = session['messages'];
@@ -144,6 +148,7 @@ class JournalDataSource {
                 emoji: _emojiForMood(mood, rating),
                 tags: _deriveTags(text),
                 accent: _accentColor(rating),
+                sessionIndex: i,
               ),
             );
           }
@@ -224,6 +229,7 @@ class JournalDataSource {
         emoji: '😊',
         tags: const ['Meditation', 'Work'],
         accent: const Color(0xFF7B5EA7),
+        sessionIndex: null,
       ),
       JournalEntry(
         title: 'Productive Growth',
@@ -234,6 +240,7 @@ class JournalDataSource {
         emoji: '🌱',
         tags: const ['Relationships'],
         accent: const Color(0xFF1D7B63),
+        sessionIndex: null,
       ),
       JournalEntry(
         title: 'Inspired Moments',
@@ -244,6 +251,7 @@ class JournalDataSource {
         emoji: '✨',
         tags: const ['Gratitude', 'Nature'],
         accent: const Color(0xFFD45DA1),
+        sessionIndex: null,
       ),
     ];
   }
@@ -360,6 +368,7 @@ class _JournalScreenState extends State<JournalScreen> {
 
   void _navListener() {
     if (widget.navIndexNotifier?.value == 1) {
+      _loadEntries();
       final now = DateTime.now();
       setState(() {
         _visibleMonth = DateTime(now.year, now.month);
@@ -684,11 +693,28 @@ class _JournalScreenState extends State<JournalScreen> {
             children: _favoriteEntries
                 .map((e) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildJournalEntryCard(e, isDark),
+                      child: GestureDetector(
+                        onTap: () => _openFavoriteChat(e),
+                        child: _buildJournalEntryCard(e, isDark),
+                      ),
                     ))
                 .toList(),
           ),
       ],
+    );
+  }
+
+  void _openFavoriteChat(JournalEntry entry) {
+    final int? sessionIndex = entry.sessionIndex;
+    if (sessionIndex == null) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          initialMessage: '',
+          initialSessionIndex: sessionIndex,
+        ),
+      ),
     );
   }
 

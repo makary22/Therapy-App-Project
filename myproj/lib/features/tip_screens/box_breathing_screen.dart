@@ -177,12 +177,7 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.of(dialogContext).pop();
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(
-                      builder: (_) => AdviceSummaryScreen(messages: []),
-                    ),
-                    (route) => false,
-                  );
+                  Navigator.of(context).pop();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _purple,

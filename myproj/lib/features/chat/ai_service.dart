@@ -40,7 +40,7 @@ class AIService {
     String? memoryContext,
   }) async {
     final errors = <String>[];
-    final language = _detectConversationLanguage(messages);
+    final language = _detectConversationStartLanguage(messages);
     final history = _buildConversationHistory(messages);
 
     final languageInstruction = language == 'ar'
@@ -86,7 +86,7 @@ Assistant reply:
   static Future<Map<String, String>> generateConversationSummary({
     required List<Map<String, dynamic>> messages,
   }) async {
-    final language = _detectConversationLanguage(messages);
+    final language = _detectConversationStartLanguage(messages);
     final conversation = messages
         .map((m) {
           final text = (m['text'] as String? ?? '').trim();
@@ -170,24 +170,28 @@ $conversation
         .join('\n');
   }
 
-  static String _detectConversationLanguage(
+  static String _detectConversationStartLanguage(
       List<Map<String, dynamic>> messages) {
-    final userText = messages
+    final userMessages = messages
         .where((message) => (message['isUser'] ?? false) == true)
         .map((message) => (message['text'] as String? ?? '').trim())
         .where((text) => text.isNotEmpty)
-        .join(' ')
-        .toLowerCase();
+        .toList();
 
-    if (userText.isEmpty) {
+    if (userMessages.isEmpty) {
       return 'en';
     }
 
-    final arabicLetters =
-        RegExp(r'[\u0600-\u06FF]').allMatches(userText).length;
-    final englishLetters = RegExp(r'[a-z]').allMatches(userText).length;
+    final startSample = userMessages.take(3).join(' ').toLowerCase();
+    final firstMessage = userMessages.first.toLowerCase();
 
-    if (arabicLetters > englishLetters) {
+    bool looksArabic(String text) {
+      final arabicLetters = RegExp(r'[\u0600-\u06FF]').allMatches(text).length;
+      final englishLetters = RegExp(r'[a-z]').allMatches(text).length;
+      return arabicLetters > englishLetters;
+    }
+
+    if (looksArabic(firstMessage) || looksArabic(startSample)) {
       return 'ar';
     }
 
@@ -205,7 +209,8 @@ $conversation
       'زهقت',
     ];
 
-    if (arabicHints.any(userText.contains)) {
+    if (arabicHints.any(firstMessage.contains) ||
+        arabicHints.any(startSample.contains)) {
       return 'ar';
     }
 

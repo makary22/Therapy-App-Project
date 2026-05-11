@@ -58,10 +58,7 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
   }
 
   void _finishAndReturnHome() {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => AdviceSummaryScreen(messages: [])),
-      (route) => false,
-    );
+    Navigator.of(context).pop();
   }
 
   @override

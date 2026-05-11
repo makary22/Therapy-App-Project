@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai_service.dart';
 import '../tip_screens/box_breathing_screen.dart';
@@ -12,6 +15,7 @@ class AdviceSummaryScreen extends StatelessWidget {
 
   static final Map<String, Map<String, String>> _summaryCache = {};
   static const int _maxSummaryCacheSize = 50;
+  static const String _summaryCachePrefix = 'advice_summary_cache_v1_';
 
   AdviceSummaryScreen({
     super.key,
@@ -40,6 +44,27 @@ class AdviceSummaryScreen extends StatelessWidget {
       return cached;
     }
 
+    final prefs = await SharedPreferences.getInstance();
+    final persisted = prefs.getString('$_summaryCachePrefix$signature');
+    if (persisted != null && persisted.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(persisted);
+        if (decoded is Map<String, dynamic>) {
+          final restored = decoded.map(
+            (key, value) => MapEntry(key, value?.toString() ?? ''),
+          );
+          if ((restored['tag'] ?? '').isNotEmpty &&
+              (restored['headline'] ?? '').isNotEmpty &&
+              (restored['insight'] ?? '').isNotEmpty) {
+            _summaryCache[signature] = restored;
+            return restored;
+          }
+        }
+      } catch (_) {
+        // Ignore broken cache entries and regenerate.
+      }
+    }
+
     final generated = await AIService.generateConversationSummary(
       messages: messages,
     );
@@ -48,6 +73,8 @@ class AdviceSummaryScreen extends StatelessWidget {
       _summaryCache.remove(_summaryCache.keys.first);
     }
     _summaryCache[signature] = generated;
+    await prefs.setString(
+        '$_summaryCachePrefix$signature', jsonEncode(generated));
     return generated;
   }
 
