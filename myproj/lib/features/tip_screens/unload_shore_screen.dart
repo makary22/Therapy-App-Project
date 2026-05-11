@@ -1,5 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import '../chat/AdviceSummaryScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UnloadShoreScreen extends StatefulWidget {
   const UnloadShoreScreen({super.key});
@@ -12,7 +14,13 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
   final TextEditingController _thing1Controller = TextEditingController();
   final TextEditingController _thing2Controller = TextEditingController();
   final TextEditingController _thing3Controller = TextEditingController();
+  final List<Map<String, dynamic>> _history = [];
+  Map<String, dynamic>? _pendingPopupEntry;
   bool _showSuccessOverlay = false;
+
+  static const String _historyStorageKey = 'unload_shore_history_v1';
+  static const String _popupSeenStorageKey = 'unload_shore_popup_seen_v1';
+  static const Duration _historyRetention = Duration(hours: 24);
 
   static const Color _purple = Color(0xFF7B5EA7);
   static const Color _pink = Color(0xFFD45DA1);
@@ -20,6 +28,12 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
   static const Color _cardBg = Color(0xFFFFFFFF);
   static const Color _textPrimary = Color(0xFF1E1F29);
   static const Color _textMuted = Color(0xFF888888);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
 
   @override
   void dispose() {
@@ -51,14 +65,149 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
 
     debugPrint('UnloadShore save: $savedPayload');
 
+    final now = DateTime.now();
+    final historyEntry = <String, dynamic>{
+      'savedAt': now.toIso8601String(),
+      'items': List<String>.from(things),
+    };
+
+    final updatedHistory = _pruneExpiredHistory([
+      historyEntry,
+      ..._history,
+    ], now);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_historyStorageKey, jsonEncode(updatedHistory));
+
     if (!mounted) return;
     setState(() {
+      _history
+        ..clear()
+        ..addAll(updatedHistory);
+      _showSuccessOverlay = false;
+      _pendingPopupEntry = null;
+    });
+  }
+
+  Future<void> _loadHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? raw = prefs.getString(_historyStorageKey);
+    if (raw == null || raw.isEmpty) return;
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+
+      final now = DateTime.now();
+      final loadedHistory = <Map<String, dynamic>>[];
+
+      for (final entry in decoded) {
+        if (entry is! Map) continue;
+        final savedAt = DateTime.tryParse(entry['savedAt']?.toString() ?? '');
+        final itemsRaw = entry['items'];
+        if (savedAt == null || itemsRaw is! List) continue;
+
+        final items = itemsRaw
+            .map((item) => item.toString().trim())
+            .where((item) => item.isNotEmpty)
+            .toList();
+
+        if (items.isEmpty) continue;
+        if (now.difference(savedAt) > _historyRetention) continue;
+
+        loadedHistory.add({
+          'savedAt': savedAt.toIso8601String(),
+          'items': items,
+        });
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _history
+          ..clear()
+          ..addAll(loadedHistory);
+      });
+
+      if (loadedHistory.length != decoded.length) {
+        await prefs.setString(
+          _historyStorageKey,
+          jsonEncode(loadedHistory),
+        );
+      }
+
+      await _maybeShowPendingPopup(prefs, loadedHistory);
+    } catch (_) {
+      // Ignore malformed cached data and continue with empty history.
+    }
+  }
+
+  Future<void> _maybeShowPendingPopup(
+    SharedPreferences prefs,
+    List<Map<String, dynamic>> history,
+  ) async {
+    final DateTime todayStart = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+
+    final String? seenRaw = prefs.getString(_popupSeenStorageKey);
+    final DateTime? seenAt = DateTime.tryParse(seenRaw ?? '');
+
+    final dueEntries = history.where((entry) {
+      final savedAt = DateTime.tryParse(entry['savedAt']?.toString() ?? '');
+      if (savedAt == null) return false;
+      if (!savedAt.isBefore(todayStart)) return false;
+      if (seenAt != null && !savedAt.isAfter(seenAt)) return false;
+      return true;
+    }).toList();
+
+    if (dueEntries.isEmpty || !mounted) return;
+
+    dueEntries.sort((a, b) {
+      final aTime = DateTime.tryParse(a['savedAt']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = DateTime.tryParse(b['savedAt']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
+
+    setState(() {
+      _pendingPopupEntry = dueEntries.first;
       _showSuccessOverlay = true;
     });
   }
 
-  void _finishAndReturnHome() {
+  List<Map<String, dynamic>> _pruneExpiredHistory(
+    List<Map<String, dynamic>> entries,
+    DateTime now,
+  ) {
+    return entries.where((entry) {
+      final savedAt = DateTime.tryParse(entry['savedAt']?.toString() ?? '');
+      if (savedAt == null) return false;
+      return now.difference(savedAt) <= _historyRetention;
+    }).toList();
+  }
+
+  Future<void> _finishAndReturnHome() async {
+    if (_pendingPopupEntry != null) {
+      await _markPopupSeen(_pendingPopupEntry!);
+    }
+    if (mounted) {
+      setState(() {
+        _showSuccessOverlay = false;
+        _pendingPopupEntry = null;
+      });
+    }
     Navigator.of(context).pop();
+  }
+
+  Future<void> _markPopupSeen(Map<String, dynamic> entry) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _popupSeenStorageKey,
+      entry['savedAt']?.toString() ?? '',
+    );
   }
 
   @override
@@ -260,6 +409,131 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'HISTORY',
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFFB5B2C4) : _textMuted,
+                      letterSpacing: 1.6,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (_history.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1A1C27) : _cardBg,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF3A3B4D)
+                              : const Color(0xFFE7E3EF),
+                        ),
+                      ),
+                      child: Text(
+                        'Saved items will appear here for 24 hours.',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFFB5B2C4) : _textMuted,
+                          fontSize: 14,
+                        ),
+                      ),
+                    )
+                  else
+                    Column(
+                      children: _history.map((entry) {
+                        final savedAt = DateTime.tryParse(
+                                entry['savedAt']?.toString() ?? '')
+                            ?.toLocal();
+                        final items = (entry['items'] as List<dynamic>? ?? [])
+                            .map((item) => item.toString())
+                            .toList();
+
+                        return Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1A1C27) : _cardBg,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF3A3B4D)
+                                  : const Color(0xFFE7E3EF),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.schedule_rounded,
+                                      size: 16,
+                                      color: isDark
+                                          ? const Color(0xFFB5B2C4)
+                                          : _purple),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    savedAt == null
+                                        ? 'Saved recently'
+                                        : _formatSavedAt(savedAt),
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? const Color(0xFFF1EEF8)
+                                          : _textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              ...items.asMap().entries.map((itemEntry) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        width: 20,
+                                        height: 20,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: _purple.withOpacity(0.10),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Text(
+                                          '${itemEntry.key + 1}',
+                                          style: const TextStyle(
+                                            color: _purple,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          itemEntry.value,
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? const Color(0xFFE8E5F3)
+                                                : _textPrimary,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
                 ],
               ),
             ),
@@ -304,7 +578,9 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        'Safe travels to sleep. See you tomorrow.',
+                        _pendingPopupEntry == null
+                            ? 'Safe travels to sleep. See you tomorrow.'
+                            : 'Here are the 3 things you saved yesterday.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color:
@@ -314,6 +590,72 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+                      if (_pendingPopupEntry != null) ...[
+                        const SizedBox(height: 18),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF2A2B38)
+                                : const Color(0xFFF6F3FA),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ...((_pendingPopupEntry!['items']
+                                              as List<dynamic>? ??
+                                          [])
+                                      .map((item) => item.toString())
+                                      .toList())
+                                  .asMap()
+                                  .entries
+                                  .map((itemEntry) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        width: 20,
+                                        height: 20,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: _purple.withOpacity(0.10),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Text(
+                                          '${itemEntry.key + 1}',
+                                          style: const TextStyle(
+                                            color: _purple,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          itemEntry.value,
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? const Color(0xFFE8E5F3)
+                                                : _textPrimary,
+                                            height: 1.4,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 18),
                       SizedBox(
                         width: double.infinity,
@@ -390,5 +732,27 @@ class _UnloadShoreScreenState extends State<UnloadShoreScreen> {
         ),
       ),
     );
+  }
+
+  String _formatSavedAt(DateTime savedAt) {
+    final monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    final int hour = savedAt.hour % 12 == 0 ? 12 : savedAt.hour % 12;
+    final String minute = savedAt.minute.toString().padLeft(2, '0');
+    final String period = savedAt.hour >= 12 ? 'PM' : 'AM';
+    return '${monthNames[savedAt.month - 1]} ${savedAt.day}, $hour:$minute $period';
   }
 }
