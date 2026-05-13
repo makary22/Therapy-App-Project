@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../chat/ChatScreen.dart';
+import '../chat/chat_history_refresh.dart';
 import '../home/HomeScreen.dart';
 import 'profile_screen.dart';
 import 'weekly_reflections_screen.dart';
@@ -349,6 +350,7 @@ class _JournalScreenState extends State<JournalScreen> {
     _loadEntries();
     // listen for tab activation from HomeScreen (if provided)
     widget.navIndexNotifier?.addListener(_navListener);
+    ChatHistoryRefresh.token.addListener(_onChatHistoryChanged);
   }
 
   Future<void> _loadEntries() async {
@@ -377,9 +379,15 @@ class _JournalScreenState extends State<JournalScreen> {
     }
   }
 
+  void _onChatHistoryChanged() {
+    if (!mounted) return;
+    _loadEntries();
+  }
+
   @override
   void dispose() {
     widget.navIndexNotifier?.removeListener(_navListener);
+    ChatHistoryRefresh.token.removeListener(_onChatHistoryChanged);
     super.dispose();
   }
 

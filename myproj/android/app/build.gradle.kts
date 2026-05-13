@@ -10,6 +10,8 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
+    val releaseKeystore = file("upload-keystore.jks")
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -17,11 +19,13 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            keyAlias = "upload"
-            keyPassword = "basmala"
-            storeFile = file("upload-keystore.jks")
-            storePassword = "basmala"
+        if (releaseKeystore.exists()) {
+            create("release") {
+                keyAlias = "upload"
+                keyPassword = "basmala"
+                storeFile = releaseKeystore
+                storePassword = "basmala"
+            }
         }
     }
 
@@ -35,7 +39,11 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (releaseKeystore.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

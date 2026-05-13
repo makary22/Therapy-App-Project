@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'AdviceSummaryScreen.dart';
+import 'chat_history_refresh.dart';
 import 'ai_service.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -325,6 +326,7 @@ class _ChatScreenState extends State<ChatScreen> {
       cur['favorite'] = !(cur['favorite'] ?? false);
     });
     _saveSessions();
+    ChatHistoryRefresh.notifyUpdated();
   }
 
   void _scrollToBottom() {
@@ -1039,6 +1041,7 @@ class _ChatScreenState extends State<ChatScreen> {
     });
 
     _saveSessions();
+    ChatHistoryRefresh.notifyUpdated();
   }
 
   void _showHistorySheet() {
