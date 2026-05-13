@@ -94,6 +94,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   // ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -104,14 +105,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF12131C) : Colors.white,
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // ── Top illustration band ──
               Container(
-                color: _bgTop,
+                color: isDark ? const Color(0xFF1A1C27) : _bgTop,
                 padding: const EdgeInsets.symmetric(vertical: 32),
                 child: Column(
                   children: [
@@ -158,9 +159,13 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                           children: [
-                            const TextSpan(
+                            TextSpan(
                               text: 'Verify your ',
-                              style: TextStyle(color: Color(0xFF1A1A2E)),
+                              style: TextStyle(
+                                color: isDark
+                                    ? const Color(0xFFF1EEF8)
+                                    : const Color(0xFF1A1A2E),
+                              ),
                             ),
                             TextSpan(
                               text: 'Email',
@@ -174,9 +179,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       // Instruction text
                       Text.rich(
                         TextSpan(
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF555555),
+                            color: isDark
+                                ? const Color(0xFFA8A6B5)
+                                : const Color(0xFF555555),
                             height: 1.6,
                           ),
                           children: [
@@ -334,8 +341,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   }
 
   Widget _dot(Color color) => Container(
-    width: 8,
-    height: 8,
-    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-  );
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      );
 }
