@@ -1,6 +1,6 @@
 # Safe Space (Flutter)
 
-Flutter app with Firebase Authentication and Firebase Cloud Messaging.
+Flutter mental wellness app with Firebase Authentication, saved mood check-ins, AI chat, journal insights, and daily reminder notifications.
 
 ## Features
 
@@ -10,7 +10,13 @@ Flutter app with Firebase Authentication and Firebase Cloud Messaging.
   - Google Sign-In.
   - Facebook Sign-In.
 - Email verification before final access.
-- Push notifications via FCM with topic subscription (`daily_notifications`).
+- Home dashboard with mood check-in, daily reflection, rotating quote, and water tracker.
+- AI chat screen with saved conversation history, favorites, delete support, and summary view.
+- Chat history dates are rendered dynamically as Today, Yesterday, or month/day based on the session time.
+- Journal and weekly reflections screens that reuse saved chat sessions for personal insight.
+- Profile screen with avatar upload, dark mode toggle, reminder time selection, and sign out.
+- Daily reminder notifications scheduled locally from the selected time in the profile.
+- Firebase Cloud Functions are included for scheduled server-side notification delivery.
 
 ## Tech Stack
 
@@ -18,7 +24,10 @@ Flutter app with Firebase Authentication and Firebase Cloud Messaging.
 - Firebase Core / Auth / Messaging
 - Google Sign-In
 - Facebook Auth
+- flutter_local_notifications
+- timezone
 - Shared Preferences
+- image_picker
 
 ## Project Structure (Short)
 
@@ -27,9 +36,14 @@ lib/
   main.dart
   features/
     auth/
+    chat/
     home/
     notifications/
+    theme/
     screens/
+      profile_screen.dart
+      journal_screen.dart
+      weekly_reflections_screen.dart
 functions/
   index.js
   package.json
@@ -110,6 +124,14 @@ android/app/google-services.json
   - Google
   - Facebook
 
+## App Areas
+
+- `Home` shows the daily mood card, reflection input, quote card, and water tracker.
+- `Chat` stores conversations locally in `SharedPreferences` and drives the journal and weekly reflections views.
+- `Journal` turns saved check-ins into timeline-style entries.
+- `Weekly Reflections` groups the saved chat history into weekly insight cards.
+- `Profile` manages name, avatar, theme, and reminder time.
+
 ## Important For Team (Google Sign-In)
 
 If Google Sign-In works for one teammate but fails for another, Firebase is usually missing that machine's debug keystore fingerprint.
@@ -138,10 +160,12 @@ If you see an error like "App not active", the issue is usually in Facebook Deve
 
 ## Notifications (FCM)
 
-- The app automatically subscribes to topic: `daily_notifications`.
-- Cloud Functions notification setup is documented in:
+- The app requests notification permission and schedules a local daily reminder using the time selected in Profile.
+- Cloud Functions notification setup and optional topic delivery are documented in:
 
 `FCM_SETUP.md`
+
+If you use the Cloud Functions path, the topic name in the backend is `daily_notifications`.
 
 ## Useful Commands
 

@@ -83,10 +83,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _startNewSession(String firstMessage) {
     final now = DateTime.now();
-    final String dateLabel = _formatDateLabel(now);
 
     _sessions.add({
-      'date': dateLabel,
+      'date': _formatDateLabel(now),
+      'createdAt': now,
       'messages': <Map<String, dynamic>>[
         {
           'text': firstMessage,
@@ -259,8 +259,15 @@ class _ChatScreenState extends State<ChatScreen> {
           });
         }
 
+        final createdAtRaw = session['createdAt'];
+        DateTime? createdAt;
+        if (createdAtRaw is String) {
+          createdAt = DateTime.tryParse(createdAtRaw);
+        }
+
         loaded.add({
           'date': session['date'] ?? '',
+          'createdAt': createdAt,
           'messages': messages,
           'favorite': session['favorite'] ?? false,
         });
@@ -293,6 +300,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       return {
         'date': session['date'],
+        'createdAt': (session['createdAt'] as DateTime?)?.toIso8601String(),
         'messages': messages,
         'favorite': session['favorite'] ?? false,
       };
@@ -365,6 +373,45 @@ class _ChatScreenState extends State<ChatScreen> {
     final m = dt.minute.toString().padLeft(2, '0');
     final period = dt.hour < 12 ? 'AM' : 'PM';
     return '$h:$m $period';
+  }
+
+  String _sessionDateLabel(Map<String, dynamic> session) {
+    final createdAtRaw = session['createdAt'];
+    DateTime? createdAt;
+    if (createdAtRaw is DateTime) {
+      createdAt = createdAtRaw;
+    } else if (createdAtRaw is String) {
+      createdAt = DateTime.tryParse(createdAtRaw);
+    }
+
+    if (createdAt != null) {
+      return _formatDateLabel(createdAt);
+    }
+
+    final messagesRaw = session['messages'];
+    if (messagesRaw is List && messagesRaw.isNotEmpty) {
+      final firstMessage = messagesRaw.first;
+      if (firstMessage is Map<String, dynamic>) {
+        final firstTimestampRaw = firstMessage['timestamp'];
+        DateTime? firstTimestamp;
+        if (firstTimestampRaw is DateTime) {
+          firstTimestamp = firstTimestampRaw;
+        } else if (firstTimestampRaw is String) {
+          firstTimestamp = DateTime.tryParse(firstTimestampRaw);
+        }
+
+        if (firstTimestamp != null) {
+          return _formatDateLabel(firstTimestamp);
+        }
+      }
+    }
+
+    final fallbackLabel = session['date'] as String?;
+    if (fallbackLabel != null && fallbackLabel.isNotEmpty) {
+      return fallbackLabel;
+    }
+
+    return 'Session';
   }
 
   bool get _canShowSummary {
@@ -564,7 +611,10 @@ class _ChatScreenState extends State<ChatScreen> {
     final allItems = <dynamic>[];
     final currentSession = _sessions[_activeSessionIndex];
 
-    allItems.add({'type': 'divider', 'label': currentSession['date']});
+    allItems.add({
+      'type': 'divider',
+      'label': _sessionDateLabel(currentSession),
+    });
     final msgs = currentSession['messages'] as List<Map<String, dynamic>>;
     for (final msg in msgs) {
       allItems.add({'type': 'message', ...msg});
@@ -1129,7 +1179,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                       fontSize: 18)),
                                             const SizedBox(width: 8),
                                             Text(
-                                              session['date'] as String,
+                                              _sessionDateLabel(session),
                                               style: TextStyle(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w700,
