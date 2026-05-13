@@ -709,6 +709,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             );
+            _dayReflectionController.clear();
           },
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
